@@ -1,0 +1,320 @@
+{
+	"info": {
+		"_postman_id": "defb173c-c80b-4a2a-9cdc-b1d4f9bb129a",
+		"name": "sbh_69_remove_data_check_onboarding_survey",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"_exporter_id": "282640"
+	},
+	"item": [
+		{
+			"name": "Auth",
+			"item": [
+				{
+					"name": "request_generate_otp",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"// console.log(\"--- Start Testsuite 69 ---\");",
+									"",
+									"//random characters",
+									"function randomChars(length) {",
+									"    var result           = '';",
+									"    var characters       = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';",
+									"    var charactersLength = characters.length;",
+									"    for ( var i = 0; i < length; i++ ) {",
+									"      result += characters.charAt(Math.floor(Math.random() * ",
+									" charactersLength));",
+									"   }",
+									"   return result;",
+									"}",
+									"",
+									"//random number between min and max",
+									"function getRandomInt(min, max) {",
+									"  \treturn Math.floor(Math.random() * (max - min + 1)) + min;",
+									"}",
+									"",
+									"let secret_key = randomChars(40);",
+									"let platfrom_list = [\"pro_web\",\"stapp\"];",
+									"let device_id = randomChars(8) + \"-\" + randomChars(4) + \"-\" + randomChars(4) + \"-\" + randomChars(4) + \"-\" + randomChars(12);",
+									"",
+									"// paste list phone dùng để data test vào đây",
+									"let list_phone_should_reset = [\"0371060334\",\"0925325819\",\"0913175568\",\"0333834458\",\"0863495633\",\"0769315497\",\"0773243807\",\"0581926853\",\"0961302210\",\"0975291254\",\"0919796985\",\"0963372640\",\"0830572152\",\"0898567146\",\"0858091543\",\"0975178221\",\"0376656715\",\"0827718788\",\"0876541311\",\"0791047446\",\"0867846690\",\"0789805839\",\"0993214488\",\"0965402386\",\"0826472430\",\"0774759142\",\"0379287591\"];",
+									"let position = pm.environment.get(\"C-position\");",
+									"if(!position){",
+									"    position = 0;",
+									"    pm.environment.set(\"C-position\",position);",
+									"    pm.environment.set(\"C-list_phone_should_reset\",list_phone_should_reset);",
+									"}",
+									"let phone_number = list_phone_should_reset[position];",
+									"",
+									"pm.environment.set(\"C-phone_number\",phone_number);",
+									"pm.environment.set(\"C-device_id\",device_id);",
+									"pm.environment.set(\"C-secret_key\",secret_key);",
+									"",
+									"let platform = platfrom_list[0];//platfrom_list[getRandomInt(0,platfrom_list.length - 1)];",
+									"pm.environment.set(\"C-platform\",platform);",
+									"let payload = {",
+									"    \"platform\": platform,",
+									"    \"phone_number\":phone_number,",
+									"    \"device_id\":device_id",
+									"}",
+									"// debug",
+									"console.log(\"payload: \" + JSON.stringify(payload));",
+									"pm.environment.set(\"C-payload\",JSON.stringify(payload));"
+								],
+								"type": "text/javascript"
+							}
+						},
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"if(pm.response.code == 200){",
+									"    let jsData = pm.response.json();",
+									"",
+									"    if(jsData.data.status == \"created\"){",
+									"        postman.setNextRequest(\"get_user_token_via_otp\");",
+									"    } else {",
+									"        console.log(\"Error:\", JSON.stringify(jsData));",
+									"        postman.setNextRequest(null);",
+									"    }",
+									"} else {",
+									"    console.log(\"Error, end test\");",
+									"    postman.setNextRequest(null);",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{{C-payload}}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{sbh_base_url}}/finan-user/api/v1/auth/otp/generate",
+							"host": [
+								"{{sbh_base_url}}"
+							],
+							"path": [
+								"finan-user",
+								"api",
+								"v1",
+								"auth",
+								"otp",
+								"generate"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "get_user_token_via_otp",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"/**",
+									" * fix for DEV n STAGING: otp = 1207",
+									" * note: newman can't parse with note in body raw type",
+									" * UPDATE 05SEP2023: http change to https",
+									" */",
+									"",
+									"let payload = {",
+									"    \"platform\":pm.environment.get(\"C-platform\"),",
+									"    \"otp\":\"1207\",",
+									"    \"phone_number\":pm.environment.get(\"C-phone_number\"),",
+									"    \"device_id\":pm.environment.get(\"C-device_id\")",
+									"}",
+									"pm.environment.set(\"C-payload\",JSON.stringify(payload));"
+								],
+								"type": "text/javascript"
+							}
+						},
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"if(pm.response.code == 200){",
+									"    let jsData = pm.response.json();",
+									"    // debug",
+									"    // console.log(JSON.stringify(jsData));",
+									"",
+									"    let business_id = null;",
+									"    try{",
+									"        business_id = jsData.data.business_info.list_business[0].business_id;",
+									"    } catch{",
+									"        console.log(\"This is new user, must create business_id\");",
+									"    }",
+									"",
+									"    let userToken = jsData.data.token;",
+									"    pm.environment.set(\"C-userToken\",userToken);",
+									"",
+									"    if(business_id == null){",
+									"        console.log(\"This user don't have store, please check & use another account\");",
+									"        ",
+									"        postman.setNextRequest(null);",
+									"    } else {",
+									"        let userRefreshToken = jsData.data.refresh_token;",
+									"",
+									"        let userInfo = {",
+									"            \"role_name\":jsData.data.business_info.current_role.role_name,",
+									"            \"is_owner\":jsData.data.business_info.current_role.is_owner,",
+									"            \"user_name\":jsData.data.business_info.list_business[0].user_name,",
+									"            \"business_id\":business_id",
+									"        }",
+									"",
+									"        // show log",
+									"        // console.log(\"userToken:\",userToken);",
+									"        // console.log(\"userRefreshToken:\",userRefreshToken);",
+									"        console.log(\"userInfo:\",JSON.stringify(userInfo));",
+									"",
+									"        pm.environment.set(\"C-userRefreshToken\",userRefreshToken);",
+									"        pm.environment.set(\"C-userInfo\",userInfo);",
+									"        pm.environment.set(\"C-business_id\",business_id);",
+									"",
+									"        postman.setNextRequest(\"reset_user\");",
+									"    }",
+									"} else {",
+									"    console.log(\"Can't get Token, end test\");",
+									"",
+									"    // debug",
+									"    let jsData = pm.response.json();",
+									"    console.log(\"data:\",JSON.stringify(jsData));",
+									"",
+									"    postman.setNextRequest(null);",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json",
+								"type": "text",
+								"disabled": true
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{{C-payload}}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{sbh_base_url}}/finan-user/api/v1/auth/otp/confirm",
+							"host": [
+								"{{sbh_base_url}}"
+							],
+							"path": [
+								"finan-user",
+								"api",
+								"v1",
+								"auth",
+								"otp",
+								"confirm"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Account",
+			"item": [
+				{
+					"name": "reset_user",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"let list_phone_should_reset = pm.environment.get(\"C-list_phone_should_reset\");",
+									"let position = pm.environment.get(\"C-position\");",
+									"",
+									"let jsData = pm.response.json();",
+									"console.log(JSON.stringify(jsData));",
+									"",
+									"if(position >= list_phone_should_reset.length - 1){",
+									"    postman.setNextRequest(null);",
+									"} else {",
+									"    position++;",
+									"    pm.environment.set(\"C-position\",position);",
+									"    postman.setNextRequest(\"request_generate_otp\");",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{C-userToken}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{sbh_base_url}}/ms-user-management/api/profile/reset-user",
+							"host": [
+								"{{sbh_base_url}}"
+							],
+							"path": [
+								"ms-user-management",
+								"api",
+								"profile",
+								"reset-user"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		}
+	]
+}

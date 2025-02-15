@@ -1,0 +1,505 @@
+{
+	"info": {
+		"_postman_id": "fe791ed3-f0b7-4511-b6f6-81d6ee17ff1d",
+		"name": "sbh_83_clear_contact_with_debt_amount_is_zero",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"_exporter_id": "282640"
+	},
+	"item": [
+		{
+			"name": "Auth",
+			"item": [
+				{
+					"name": "request_generate_otp",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"console.log(\"--- Start Testsuite 83 ---\");",
+									"console.log(\"Manual run to clear contact with debt_amount = 0\");",
+									"pm.environment.set(\"C-testcase\",1);",
+									"",
+									"//random characters",
+									"function randomChars(length) {",
+									"    var result           = '';",
+									"    var characters       = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';",
+									"    var charactersLength = characters.length;",
+									"    for ( var i = 0; i < length; i++ ) {",
+									"      result += characters.charAt(Math.floor(Math.random() * ",
+									" charactersLength));",
+									"   }",
+									"   return result;",
+									"}",
+									"",
+									"//random number between min and max",
+									"function getRandomInt(min, max) {",
+									"  \treturn Math.floor(Math.random() * (max - min + 1)) + min;",
+									"}",
+									"",
+									"let secret_key = randomChars(40);",
+									"let platfrom_list = [\"pro_web\",\"stapp\"];",
+									"let device_id = randomChars(8) + \"-\" + randomChars(4) + \"-\" + randomChars(4) + \"-\" + randomChars(4) + \"-\" + randomChars(12);",
+									"let platform = platfrom_list[0];//platfrom_list[getRandomInt(0,platfrom_list.length - 1)];",
+									"",
+									"let phone_number = pm.environment.get(\"SER-phone_number\");",
+									"console.log(\"phone_number: \" + phone_number);",
+									"pm.environment.set(\"C-phone_number\",phone_number);",
+									"pm.environment.set(\"C-platform\",platform);",
+									"pm.environment.set(\"C-device_id\",device_id);",
+									"",
+									"let payload = {",
+									"    \"platform\": platform,",
+									"    \"phone_number\":phone_number,",
+									"    \"device_id\":device_id",
+									"}",
+									"// debug",
+									"console.log(\"payload: \" + JSON.stringify(payload));",
+									"pm.environment.set(\"C-payload\",JSON.stringify(payload));"
+								],
+								"type": "text/javascript"
+							}
+						},
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"if(pm.response.code == 200){",
+									"    let jsData = pm.response.json();",
+									"",
+									"    if(jsData.data.status == \"created\"){",
+									"        postman.setNextRequest(\"get_user_token_via_otp\");",
+									"    } else {",
+									"        console.log(\"Error:\", JSON.stringify(jsData));",
+									"        postman.setNextRequest(null);",
+									"    }",
+									"} else {",
+									"    console.log(\"Error, end test\");",
+									"    postman.setNextRequest(null);",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{{C-payload}}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{sbh_base_url}}/finan-user/api/v1/auth/otp/generate",
+							"host": [
+								"{{sbh_base_url}}"
+							],
+							"path": [
+								"finan-user",
+								"api",
+								"v1",
+								"auth",
+								"otp",
+								"generate"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "get_user_token_via_otp",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"/**",
+									" * fix for DEV n STAGING: otp = 1207",
+									" * note: newman can't parse with note in body raw type",
+									" * UPDATE 05SEP2023: http change to https",
+									" */",
+									"",
+									"let payload = {",
+									"    \"platform\":pm.environment.get(\"C-platform\"),",
+									"    \"otp\":\"1207\",",
+									"    \"phone_number\":pm.environment.get(\"C-phone_number\"),",
+									"    \"device_id\":pm.environment.get(\"C-device_id\")",
+									"}",
+									"pm.environment.set(\"C-payload\",JSON.stringify(payload));"
+								],
+								"type": "text/javascript"
+							}
+						},
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"if(pm.response.code == 200){",
+									"    let jsData = pm.response.json();",
+									"    // debug",
+									"    // console.log(JSON.stringify(jsData));",
+									"",
+									"    let business_id = null;",
+									"    try{",
+									"        business_id = jsData.data.business_info.list_business[0].business_id;",
+									"    } catch{",
+									"        console.log(\"This is new user, must create business_id\");",
+									"    }",
+									"",
+									"    let userToken = jsData.data.token;",
+									"    pm.environment.set(\"C-userToken\",userToken);",
+									"",
+									"    if(business_id == null){",
+									"        console.log(\"This user don't have store, please check & use another account\");",
+									"        ",
+									"        postman.setNextRequest(null);",
+									"    } else {",
+									"        let userRefreshToken = jsData.data.refresh_token;",
+									"",
+									"        let userInfo = {",
+									"            \"role_name\":jsData.data.business_info.current_role.role_name,",
+									"            \"is_owner\":jsData.data.business_info.current_role.is_owner,",
+									"            \"user_name\":jsData.data.business_info.list_business[0].user_name,",
+									"            \"business_id\":business_id",
+									"        }",
+									"",
+									"        // show log",
+									"        // console.log(\"userToken:\",userToken);",
+									"        // console.log(\"userRefreshToken:\",userRefreshToken);",
+									"        console.log(\"userInfo:\",JSON.stringify(userInfo));",
+									"",
+									"        pm.environment.set(\"C-userRefreshToken\",userRefreshToken);",
+									"        pm.environment.set(\"C-userInfo\",userInfo);",
+									"        pm.environment.set(\"C-business_id\",business_id);",
+									"",
+									"        let testcase = pm.environment.get(\"C-testcase\");",
+									"        testcase++;",
+									"        pm.environment.set(\"C-testcase\",testcase);",
+									"        postman.setNextRequest(\"get_list_contact\");",
+									"    }",
+									"} else {",
+									"    console.log(\"Can't get Token, end test\");",
+									"",
+									"    // debug",
+									"    let jsData = pm.response.json();",
+									"    console.log(\"data:\",JSON.stringify(jsData));",
+									"",
+									"    postman.setNextRequest(null);",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json",
+								"type": "text",
+								"disabled": true
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{{C-payload}}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{sbh_base_url}}/finan-user/api/v1/auth/otp/confirm",
+							"host": [
+								"{{sbh_base_url}}"
+							],
+							"path": [
+								"finan-user",
+								"api",
+								"v1",
+								"auth",
+								"otp",
+								"confirm"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Contact",
+			"item": [
+				{
+					"name": "get_list_contact",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"let testcase = pm.environment.get(\"C-testcase\");",
+									"console.log(\"Testcase: \" + testcase);",
+									"",
+									"let page = pm.environment.get(\"C-page\");",
+									"",
+									"if(!page){",
+									"    page = 1;",
+									"    pm.environment.set(\"C-page\",page);",
+									"",
+									"    let page_size = 50;",
+									"    pm.environment.set(\"C-page_size\",page_size);",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						},
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"if(pm.response.code == 200){",
+									"    let jsData = JSON.parse(responseBody);",
+									"    let testcase = pm.environment.get(\"C-testcase\");",
+									"    let total_pages = jsData.meta.total_pages;",
+									"    let page = pm.environment.get(\"C-page\");",
+									"",
+									"    let list_NON_debt_contact = pm.environment.get(\"C-list_NON_debt_contact\");",
+									"    if(!list_NON_debt_contact){",
+									"        list_NON_debt_contact = [];",
+									"    }",
+									"",
+									"    for(let item in jsData.data){",
+									"        if(jsData.data[item].debt_amount == 0){",
+									"            list_NON_debt_contact[list_NON_debt_contact.length] = {",
+									"                \"contact_id\":jsData.data[item].id,",
+									"                \"name\":jsData.data[item].name,",
+									"                \"phone_number\":jsData.data[item].phone_number,",
+									"                \"business_id\":jsData.data[item].business_id,",
+									"                \"is_customer_active\":jsData.data[item].is_customer_active",
+									"            }",
+									"        }",
+									"    }",
+									"    pm.environment.set(\"C-list_NON_debt_contact\",list_NON_debt_contact);",
+									"",
+									"    if(page >= total_pages){",
+									"        // must clear page & page_size",
+									"        pm.environment.unset(\"C-page\");",
+									"        pm.environment.unset(\"C-page_size\");",
+									"",
+									"        console.log(\"list_NON_debt_contact: \",list_NON_debt_contact);",
+									"",
+									"        postman.setNextRequest(\"update_contact_active\"); // update_contact_active",
+									"    } else {",
+									"        page++;",
+									"        pm.environment.set(\"C-page\",page);",
+									"",
+									"        console.log(\"view next page (\" + page + \") to get more contact\");",
+									"        postman.setNextRequest(\"get_list_contact\"); //",
+									"    }",
+									"} else {",
+									"    console.log(\"Can't get list contact, end test\");",
+									"    postman.setNextRequest(null);",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{C-userToken}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{sbh_base_url}}/finan-business/api/v1/contact/get-list?type=&search=&business_id={{C-business_id}}&page={{C-page}}&page_size={{C-page_size}}&sort=&option=&state=waiting_confirm,delivering&is_customer_active=false",
+							"host": [
+								"{{sbh_base_url}}"
+							],
+							"path": [
+								"finan-business",
+								"api",
+								"v1",
+								"contact",
+								"get-list"
+							],
+							"query": [
+								{
+									"key": "type",
+									"value": ""
+								},
+								{
+									"key": "search",
+									"value": ""
+								},
+								{
+									"key": "business_id",
+									"value": "{{C-business_id}}"
+								},
+								{
+									"key": "page",
+									"value": "{{C-page}}"
+								},
+								{
+									"key": "page_size",
+									"value": "{{C-page_size}}"
+								},
+								{
+									"key": "sort",
+									"value": ""
+								},
+								{
+									"key": "option",
+									"value": ""
+								},
+								{
+									"key": "state",
+									"value": "waiting_confirm,delivering"
+								},
+								{
+									"key": "is_customer_active",
+									"value": "false",
+									"description": "is_active"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "update_contact_active",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"let list_NON_debt_contact = pm.environment.get(\"C-list_NON_debt_contact\");",
+									"let delete_pos = pm.environment.get(\"C-delete_pos\");",
+									"if(!delete_pos){",
+									"    delete_pos = 0;",
+									"    pm.environment.set(\"C-delete_pos\",delete_pos);",
+									"}",
+									"",
+									"let payload = {",
+									"    \"business_id\":pm.environment.get(\"C-business_id\"),",
+									"\t\"contact_id\":list_NON_debt_contact[delete_pos].contact_id",
+									"}",
+									"",
+									"console.log(\"payload: \", payload);",
+									"pm.environment.set(\"C-payload\",JSON.stringify(payload));"
+								],
+								"type": "text/javascript"
+							}
+						},
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"let jsData = JSON.parse(responseBody);",
+									"if(pm.response.code == 200){",
+									"    let list_NON_debt_contact = pm.environment.get(\"C-list_NON_debt_contact\");",
+									"    let delete_pos = pm.environment.get(\"C-delete_pos\");",
+									"",
+									"    if(delete_pos >= list_NON_debt_contact.length - 1){",
+									"        pm.environment.unset(\"C-delete_pos\");",
+									"",
+									"        postman.setNextRequest(null);",
+									"    } else {",
+									"        delete_pos++;",
+									"        pm.environment.set(\"C-delete_pos\",delete_pos);",
+									"        postman.setNextRequest(\"update_contact_active\"); // update_contact_active",
+									"    }",
+									"} else {",
+									"    console.log(\"Can't delete contact, end test\", jsData);",
+									"    postman.setNextRequest(null);",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{C-userToken}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{{C-payload}}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{sbh_base_url}}/finan-business/api/v1/contact/update-is-customer-active",
+							"host": [
+								"{{sbh_base_url}}"
+							],
+							"path": [
+								"finan-business",
+								"api",
+								"v1",
+								"contact",
+								"update-is-customer-active"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		}
+	]
+}

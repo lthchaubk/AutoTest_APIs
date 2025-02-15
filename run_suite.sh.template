@@ -1,0 +1,62 @@
+# change filepath, filename, environment before run
+# isData only true/false
+isData=false
+filepath=app/role_permission
+filename=sbh_41_check_to_create_edit_delete_a_new_role
+environment=sbh_prod
+
+# system value: cmc, aws
+system=cmc
+env=sbh_prod
+if [ $system = 'cmc' ]; then
+  endpoint_s3=s3.hcm-1.cloud.cmctelecom.vn
+else
+  endpoint_s3=s3.ap-southeast-1.amazonaws.com
+fi;
+
+dataFilename=onboarding_survey
+
+##########################################
+currentDate=$(date '+%Y-%m-%d')
+currentUTC=$(date -u +"%Y-%m-%dT%H:%M:%S.000Z")
+timestamp=$(date +%s)
+dir=test_report
+if [ ! -d $dir ]; then
+    mkdir -p $dir;
+fi;
+
+# ./lark_notifier.sh 'run suite '${filename}
+
+if [ $isData = true ]; 
+then
+  newman run ${filepath}/${filename}.postman_collection.json -e config/${environment}.postman_environment.json -d data/data_csv/${dataFilename}.csv --insecure -x >$dir/${filename}_${timestamp}.log -r lark,cli
+  ./lark_notifier.sh "Log here: https://${endpoint_s3}/sbh-qc/auto-test-api-output/${currentDate}/${filename}_${timestamp}.log"
+else
+  # change testfile.json to your filename (ex: app/sbh_12_check_create_new_stocktake_with_product.postman_collection.json)
+  newman run ${filepath}/${filename}.postman_collection.json -e config/${environment}.postman_environment.json --insecure -x >$dir/${filename}_${timestamp}.log -r lark,cli
+  ./lark_notifier.sh "Log here: https://${endpoint_s3}/sbh-qc/auto-test-api-output/${currentDate}/${filename}_${timestamp}.log"
+fi;
+
+# upload file to S3
+# npm start
+if [ $system = 'cmc' ]; then
+  node --max-old-space-size=4096 upload_cmc_s3.js
+else
+  node upload_file_to_s3.js
+fi;
+
+# write to database
+# psql "postgresql://root:@localhost:5432/SBH" <<EOF
+# INSERT INTO public.sbh_report_n_log (project, type, log_file_link, report_file_link, created_at) 
+# VALUES ('sbh','auto_api','https://sbh-qc.${endpoint_s3}/auto-test-api-output/${currentDate}/${filename}_${timestamp}.log', '', '${currentUTC}');
+# EOF
+
+psql "postgresql://postgres:bo_duong_2024@4.193.151.40:5433/mydb" <<EOF
+INSERT INTO public.qc_auto_report_n_log (project, auto_type, env, log_file_link, report_file_link, created_at) 
+VALUES ('sbh','auto_api','${environment}','https://${endpoint_s3}/sbh-qc/auto-test-api-output/${currentDate}/${filename}_${timestamp}.log', '', '${currentUTC}');
+EOF
+
+# remove .log file
+for filename in ./test_report/*.log; do
+  rm $filename
+done

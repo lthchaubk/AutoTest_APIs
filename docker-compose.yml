@@ -1,0 +1,13 @@
+# version (phiên bản) của file cấu hình docker-compose, lời khuyên là luôn chọn phiên bản mới nhất
+# https://docs.docker.com/reference/compose-file/legacy-versions/
+# version: "3.7"
+
+services:
+  sbh-auto-apis:
+    image: auto-api:v1
+    # ta cần map port tức là dùng 1 port ở hệ điều hành gốc "tham chiếu" vào cổng tương ứng ở container.
+    # bên trái là mt gốc, bên phải là container
+    # ports:
+    #   - "3000:3000"
+    # unless-stopped, ý bảo là tự động chạy service này trong mọi trường hợp
+    # restart: unless-stopped

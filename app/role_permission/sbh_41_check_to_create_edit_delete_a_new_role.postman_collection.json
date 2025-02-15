@@ -1,0 +1,1256 @@
+{
+	"info": {
+		"_postman_id": "fe446fe7-1e04-4114-99ba-6cbf942dfece",
+		"name": "sbh_41_check_to_create_edit_delete_a_new_role",
+		"description": "Testsuite: CREATE - EDIT - DELETE new role\n\nTestcase:\n\n1. Login seller (owner) account\n2. Get data:\n    1. View list permissions\n    2. View list roles\n3. Create new role with some permissions\n4. Check data:\n    1. Roles / View list roles => increase 1\n    2. Roles / View this role detail => matching created data\n5. Edit this role\n6. Check data:\n    1. Roles / View list roles => only change data\n    2. Roles / View this role detail => matching edited data\n7. Delete this role\n8. Check data:\n    1. Roles / View list roles => descrease 1\n    2. Roles / View role detail => resp 404\n\nNote:\n\n- Delete role had some staff => should error\n- Edit role had some staff => should check respective staff's permissions",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"_exporter_id": "282640"
+	},
+	"item": [
+		{
+			"name": "Auth",
+			"item": [
+				{
+					"name": "verify_phone_number",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"/**",
+									" * currently, manual to create account pwd & use charles to get it",
+									" * default pwd created: 21112007 (prod with default account & no need pwd)",
+									" */",
+									"",
+									"let phone_number = pm.environment.get(\"SER-phone_number\");",
+									"console.log(\"--- Start Testsuite 41 ---\");",
+									"console.log(\" Check list roles default \");",
+									"let testcase = 1;",
+									"",
+									"console.log(\"Testcase: \" + testcase);",
+									"console.log(\"login with phone_number: \" + phone_number);",
+									"",
+									"pm.environment.set(\"C-phone_number\",phone_number);",
+									"pm.environment.set(\"C-testcase\",testcase);"
+								],
+								"type": "text/javascript"
+							}
+						},
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"if(pm.response.code == 200){",
+									"    let jsData = pm.response.json();",
+									"",
+									"    if(jsData.data.is_existed && jsData.data.has_password){",
+									"        postman.setNextRequest(\"login_with_pwd\");",
+									"    } else if(jsData.data.is_existed) {",
+									"        console.log(\"This account doesn't create pwd, please manual create!!!\");",
+									"        postman.setNextRequest(null);",
+									"    } else {",
+									"        console.log(\"Error:\", JSON.stringify(jsData));",
+									"        console.log(\"THIS ACCOUNT IS NOT EXISTED IN SYSTEM, WILL MANUAL CREATE IT\");",
+									"        postman.setNextRequest(null);",
+									"    }",
+									"} else {",
+									"    console.log(\"Error, end test\");",
+									"    postman.setNextRequest(null);",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n\t\"phone_number\": \"{{C-phone_number}}\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{sbh_base_url}}/finan-user/api/v1/auth/account/verify",
+							"host": [
+								"{{sbh_base_url}}"
+							],
+							"path": [
+								"finan-user",
+								"api",
+								"v1",
+								"auth",
+								"account",
+								"verify"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "login_with_pwd",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"// let crypto = require('crypto-js');",
+									"",
+									"// const algorithm = \"aes-256-gcm\";",
+									"// const IV_LEN = 12;",
+									"// const AUTH_TAG_LEN = 16;",
+									"// const SECRET_KEY = \"7dQ0HwRI5okvwAK0WzxaW6ABFncjeu1E\";",
+									"",
+									"// function encrypt(message) {",
+									"//   const iv = Buffer.from(crypto.randomBytes(IV_LEN));",
+									"//   const cipher = crypto.createCipheriv(algorithm, SECRET_KEY, iv, {",
+									"//     authTagLength: AUTH_TAG_LEN,",
+									"//   });",
+									"//   const encryptedData = Buffer.concat([cipher.update(message), cipher.final()]);",
+									"//   const authTag = cipher.getAuthTag();",
+									"//   const raw = Buffer.concat([iv, encryptedData, authTag]).toString(\"hex\");",
+									"//   return raw;",
+									"// }",
+									"",
+									"// const pwd = \"21112007\";",
+									"// // var superSecretEncrypted = CryptoJS.AES.encrypt(pwd, SECRET_KEY);",
+									"",
+									"// let pwd_enc = encrypt(pwd);",
+									"// console.log(\"pwd_enc: \" + pwd_enc);"
+								],
+								"type": "text/javascript"
+							}
+						},
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"if(pm.response.code == 200){",
+									"    let jsData = pm.response.json();",
+									"    // debug",
+									"    // console.log(JSON.stringify(jsData));",
+									"",
+									"    let business_id = null;",
+									"    try{",
+									"        business_id = jsData.data.business_info.list_business[0].business_id;",
+									"    } catch{",
+									"        console.log(\"This is new user, must create business_id\");",
+									"    }",
+									"",
+									"    let userToken = jsData.data.token;",
+									"    pm.environment.set(\"C-userToken\",userToken);",
+									"",
+									"    if(business_id == null){",
+									"        console.log(\"This user don't have store, please check & use another account\");",
+									"        ",
+									"        postman.setNextRequest(null);",
+									"    } else {",
+									"        let userRefreshToken = jsData.data.refresh_token;",
+									"",
+									"        let userInfo = {",
+									"            \"role_name\":jsData.data.business_info.current_role.role_name,",
+									"            \"is_owner\":jsData.data.business_info.current_role.is_owner,",
+									"            \"user_name\":jsData.data.business_info.list_business[0].user_name,",
+									"            \"business_id\":business_id",
+									"        }",
+									"",
+									"        // show log",
+									"        // console.log(\"userToken:\",userToken);",
+									"        // console.log(\"userRefreshToken:\",userRefreshToken);",
+									"        console.log(\"userInfo:\",JSON.stringify(userInfo));",
+									"",
+									"        pm.environment.set(\"C-userRefreshToken\",userRefreshToken);",
+									"        pm.environment.set(\"C-userInfo\",userInfo);",
+									"        pm.environment.set(\"C-business_id\",business_id);",
+									"",
+									"        let testcase = pm.environment.get(\"C-testcase\");",
+									"        testcase++;",
+									"        pm.environment.set(\"C-testcase\",testcase);",
+									"        postman.setNextRequest(\"seller_view_list_permissions\");",
+									"    }",
+									"} else {",
+									"    console.log(\"Can't get Token, end test\");",
+									"",
+									"    // debug",
+									"    let jsData = pm.response.json();",
+									"    console.log(\"data:\",JSON.stringify(jsData));",
+									"",
+									"    postman.setNextRequest(null);",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n\t\"phone_number\": \"{{C-phone_number}}\",\n\t\"pwd\": \"{{pwd}}\",\n\t\"platform\": \"gtapp\",\n\t\"device_id\": \"C9102FC6-466C-4980-B795-A91A2FD7F97F\",\n\t\"app_version\": \"{{x-current-version}}\",\n\t\"device_name\": \"iPhone\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{sbh_base_url}}/finan-user/api/v1/auth/account/login",
+							"host": [
+								"{{sbh_base_url}}"
+							],
+							"path": [
+								"finan-user",
+								"api",
+								"v1",
+								"auth",
+								"account",
+								"login"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Permission",
+			"item": [
+				{
+					"name": "seller_view_list_permissions",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"let testcase = pm.environment.get(\"C-testcase\");",
+									"console.log(\"Testcase: \" + testcase);"
+								],
+								"type": "text/javascript"
+							}
+						},
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"const jsData = pm.response.json();",
+									"if(pm.response.code == 200){",
+									"    let list_permission_groups = [];",
+									"    let list_permissions = [];",
+									"    let total_per = 0;",
+									"    for(let i in jsData.data){",
+									"        console.log(\"Permission group name: \" + JSON.stringify(jsData.data[i].name));",
+									"        let permissions = [];",
+									"        for(let j in jsData.data[i].permissions){",
+									"            console.log(\"--- Permission name: \" + JSON.stringify(jsData.data[i].permissions[j].name));",
+									"            permissions[permissions.length] = {",
+									"                \"id\":jsData.data[i].permissions[j].id,",
+									"                \"name\":jsData.data[i].permissions[j].name,",
+									"                \"description\":jsData.data[i].permissions[j].description,",
+									"                \"key\":jsData.data[i].permissions[j].key,",
+									"                \"is_active\":jsData.data[i].permissions[j].is_active",
+									"            }",
+									"        }",
+									"        list_permissions = list_permissions.concat(permissions);",
+									"        ",
+									"        list_permission_groups[list_permission_groups.length] = {",
+									"            \"id\":jsData.data[i].id,",
+									"            \"name\":jsData.data[i].name,",
+									"            \"key\":jsData.data[i].key,",
+									"            \"is_active\":jsData.data[i].is_active,",
+									"            \"permissions\":permissions",
+									"        }",
+									"",
+									"        total_per += permissions.length;",
+									"    }",
+									"    console.log(\"We have: \" + list_permission_groups.length + \" roles & \" + total_per + \" permissions\");",
+									"",
+									"    pm.environment.set(\"C-list_permission_groups\",list_permission_groups);",
+									"    pm.environment.set(\"C-list_permissions\",list_permissions);",
+									"    postman.setNextRequest(\"seller_view_list_roles\");",
+									"} else {",
+									"    console.log(\"Can't get list permission, end test\");",
+									"    postman.setNextRequest(null);",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{C-userToken}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{sbh_base_url}}/finan-business/api/v1/group-permission/get-list-permission?page=1&page_size=1000",
+							"host": [
+								"{{sbh_base_url}}"
+							],
+							"path": [
+								"finan-business",
+								"api",
+								"v1",
+								"group-permission",
+								"get-list-permission"
+							],
+							"query": [
+								{
+									"key": "page",
+									"value": "1"
+								},
+								{
+									"key": "page_size",
+									"value": "1000"
+								}
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Roles",
+			"item": [
+				{
+					"name": "seller_view_list_roles",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"let testcase = pm.environment.get(\"C-testcase\");",
+									"console.log(\"Testcase: \" + testcase);"
+								],
+								"type": "text/javascript"
+							}
+						},
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"const jsData = pm.response.json();",
+									"if(pm.response.code == 200){",
+									"    let testcase = pm.environment.get(\"C-testcase\");",
+									"    let total_roles = null;",
+									"    try {",
+									"        total_roles = jsData.meta.total_rows;",
+									"    } catch {",
+									"        console.log(\"Missing meta data\");",
+									"    }",
+									"",
+									"    let test_existed_role_name;",
+									"    for(let item in jsData.data){",
+									"        if(jsData.data[item].is_default){",
+									"            test_existed_role_name = jsData.data[item].name;",
+									"            break;",
+									"        }",
+									"    }",
+									"    pm.environment.set(\"C-test_existed_role_name\",test_existed_role_name);",
+									"",
+									"    let old_total_roles;",
+									"    let role_obj = pm.environment.get(\"C-role_obj\");",
+									"    let isFound = false;",
+									"    let act_name, act_desc, act_is_default;",
+									"    switch(testcase){",
+									"        case 2:",
+									"            pm.test(\"Got total_roles\", function () {",
+									"                pm.environment.set(\"C-total_roles\",total_roles);",
+									"                pm.expect(total_roles != null).to.be.true;",
+									"            });",
+									"            ",
+									"            testcase++;",
+									"            pm.environment.set(\"C-testcase\",testcase);",
+									"            postman.setNextRequest(\"seller_create_new_role\");",
+									"            break;",
+									"        case 4:",
+									"            old_total_roles = pm.environment.get(\"C-total_roles\");",
+									"            // console.log(\"role_obj: \" + JSON.stringify(role_obj));",
+									"            let count_successful = pm.environment.get(\"C-count_successful\");",
+									"            pm.test(\"total_roles increase 1\", function () {",
+									"                console.log(\"old_total_roles: \" + old_total_roles);",
+									"                console.log(\"count_successful: \" + count_successful);",
+									"                console.log(\"total_roles: \" + total_roles);",
+									"                pm.environment.set(\"C-old_total_roles\",total_roles);",
+									"                pm.expect(total_roles == old_total_roles + count_successful).to.be.true;",
+									"            });",
+									"",
+									"            for(let i in jsData.data){",
+									"                if(jsData.data[i].id == role_obj.role_id){",
+									"                    isFound = true;",
+									"                    act_name = jsData.data[i].name;",
+									"                    act_desc = jsData.data[i].description;",
+									"                    act_is_default = jsData.data[i].is_default;",
+									"                    break;",
+									"                }",
+									"            }",
+									"",
+									"            pm.test(\"Found new role! \", function () {",
+									"                pm.expect(isFound).to.be.true;",
+									"            });",
+									"",
+									"            pm.test(\"name correctly! \" + role_obj.name, function () {",
+									"                pm.expect(role_obj.name == act_name).to.be.true;",
+									"            });",
+									"",
+									"            pm.test(\"description correctly! \" + role_obj.description, function () {",
+									"                pm.expect(role_obj.description == act_desc).to.be.true;",
+									"            });",
+									"",
+									"            pm.test(\"is_default must be false\", function () {",
+									"                pm.expect(act_is_default == false).to.be.true;",
+									"            });",
+									"",
+									"            postman.setNextRequest(\"seller_view_role_detail\"); // seller_view_role_detail",
+									"            break;",
+									"        case 6:",
+									"            old_total_roles = pm.environment.get(\"C-old_total_roles\");",
+									"            // console.log(\"role_obj: \" + JSON.stringify(role_obj));",
+									"            pm.test(\"total_roles nothing happen\", function () {",
+									"                pm.expect(total_roles == old_total_roles).to.be.true;",
+									"            });",
+									"",
+									"            for(let i in jsData.data){",
+									"                if(jsData.data[i].id == role_obj.id){",
+									"                    isFound = true;",
+									"                    act_name = jsData.data[i].name;",
+									"                    act_desc = jsData.data[i].description;",
+									"                    act_is_default = jsData.data[i].is_default;",
+									"                    break;",
+									"                }",
+									"            }",
+									"",
+									"            pm.test(\"Found edit role! \", function () {",
+									"                pm.expect(isFound).to.be.true;",
+									"            });",
+									"",
+									"            pm.test(\"name correctly! \" + role_obj.name, function () {",
+									"                pm.expect(role_obj.name == act_name).to.be.true;",
+									"            });",
+									"",
+									"            pm.test(\"description correctly! \" + role_obj.description, function () {",
+									"                pm.expect(role_obj.description == act_desc).to.be.true;",
+									"            });",
+									"",
+									"            pm.test(\"is_default must be false\", function () {",
+									"                pm.expect(act_is_default == false).to.be.true;",
+									"            });",
+									"",
+									"            postman.setNextRequest(\"seller_view_role_detail\"); // seller_view_role_detail",
+									"            break;",
+									"        case 8:",
+									"            old_total_roles = pm.environment.get(\"C-old_total_roles\");",
+									"            // console.log(\"role_obj: \" + JSON.stringify(role_obj));",
+									"            pm.test(\"total_roles descrease 1\", function () {",
+									"                pm.expect(total_roles == old_total_roles - 1).to.be.true;",
+									"            });",
+									"",
+									"            for(let i in jsData.data){",
+									"                if(jsData.data[i].id == role_obj.role_id){",
+									"                    isFound = true;",
+									"                    break;",
+									"                }",
+									"            }",
+									"",
+									"            pm.test(\"Deleted role \" + role_obj.name, function () {",
+									"                pm.expect(isFound).to.be.false;",
+									"            });",
+									"",
+									"            postman.setNextRequest(\"seller_view_role_detail\"); // seller_view_role_detail",
+									"            break;",
+									"        default:",
+									"            console.log(\"Missing flow, end test\");",
+									"            postman.setNextRequest(null);",
+									"            break;",
+									"    }",
+									"} else {",
+									"    console.log(\"Can't get list roles, end test\");",
+									"    console.log(\"Error: \" + JSON.stringify(jsData));",
+									"    postman.setNextRequest(null);",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{C-userToken}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{sbh_base_url}}/finan-business/api/v1/role-v2/get-list?page=1&page_size=50&sort=",
+							"host": [
+								"{{sbh_base_url}}"
+							],
+							"path": [
+								"finan-business",
+								"api",
+								"v1",
+								"role-v2",
+								"get-list"
+							],
+							"query": [
+								{
+									"key": "page",
+									"value": "1"
+								},
+								{
+									"key": "page_size",
+									"value": "50"
+								},
+								{
+									"key": "sort",
+									"value": ""
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "seller_create_new_role",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"let testcase = pm.environment.get(\"C-testcase\");",
+									"let case_ = pm.environment.get(\"C-case_\");",
+									"if(!case_){",
+									"    case_ = 1;",
+									"} else {",
+									"    case_++;",
+									"}",
+									"pm.environment.set(\"C-case_\",case_);",
+									"console.log(\"Testcase: \" + testcase + \".\" + case_);",
+									"",
+									"/**",
+									" * Should compose cases respective with validation file",
+									" */",
+									"let list_permissions = pm.environment.get(\"C-list_permissions\");",
+									"let role_name, permission_ids = [], description;",
+									"switch(case_){",
+									"    case 1:",
+									"        // all data is null",
+									"        role_name = \"\";",
+									"        description = \"check null data\";",
+									"        permission_ids = [];",
+									"        break;",
+									"    case 2:",
+									"        // permission is null",
+									"        role_name = \"[API] Role \" + randomChars(6);",
+									"        description = \"check null permission\";",
+									"        permission_ids = [];",
+									"        break;",
+									"    case 3:",
+									"        // duplicate role name",
+									"        role_name = pm.environment.get(\"C-test_existed_role_name\");",
+									"        description = \"check existed role name\";",
+									"        permission_ids = [list_permissions[0].id];",
+									"        break;",
+									"    case 4:",
+									"        // create successful",
+									"        role_name = \"[API] Role \" + randomChars(6);",
+									"        description = \"check to create new role\";",
+									"        let rand_list = randNotDupe(0,list_permissions.length - 1,10);",
+									"        for(let i in rand_list){",
+									"            permission_ids[permission_ids.length] = list_permissions[rand_list[i]].id;",
+									"        }",
+									"        pm.environment.set(\"C-rand_list\",rand_list);",
+									"        break;",
+									"    default:",
+									"        console.log(\"Missing flow\");",
+									"        break;",
+									"}",
+									"",
+									"let payload = {",
+									"\t\"description\": description,",
+									"\t\"business_id\": pm.environment.get(\"C-business_id\"),",
+									"\t\"name\": role_name,",
+									"\t\"permission_ids\": permission_ids",
+									"}",
+									"console.log(\"payload: \" + JSON.stringify(payload));",
+									"pm.environment.set(\"C-role_obj\",payload);",
+									"pm.environment.set(\"C-payload\",JSON.stringify(payload));",
+									"",
+									"/**",
+									" * func randNotDupe(min, max, total)",
+									" * total: số lượng random, ko dc nhỏ hơn max-min+1",
+									" * return: array",
+									" */",
+									"function randNotDupe(min, max, total){",
+									"  let arrNum = []; // new empty array",
+									"  let n, p;",
+									"  for (let i = 0; i < total; i++) {",
+									"    do {",
+									"      n = Math.floor(Math.random() * (max - min + 1)) + min;",
+									"      p = arrNum.includes(n);",
+									"      if(!p){",
+									"        arrNum.push(n);",
+									"      }",
+									"    }",
+									"    while(p);",
+									"  }",
+									"  return arrNum;",
+									"}",
+									"",
+									"//random characters",
+									"function randomChars(length) {",
+									"    var result           = '';",
+									"    var characters       = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';",
+									"    var charactersLength = characters.length;",
+									"    for ( var i = 0; i < length; i++ ) {",
+									"      result += characters.charAt(Math.floor(Math.random() * ",
+									" charactersLength));",
+									"   }",
+									"   return result;",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						},
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"let testcase = pm.environment.get(\"C-testcase\");",
+									"let case_ = pm.environment.get(\"C-case_\");",
+									"",
+									"// add count_successful to check unhappy case with success status",
+									"let count_successful = pm.environment.get(\"C-count_successful\");",
+									"if(!count_successful){",
+									"    count_successful = 0;",
+									"}",
+									"if(pm.response.code == 200){",
+									"    count_successful++;",
+									"    pm.environment.set(\"C-count_successful\",count_successful);",
+									"}",
+									"",
+									"const jsData = pm.response.json();",
+									"switch(case_){",
+									"    case 1:",
+									"        pm.test(\"Status code is 400\", function () {",
+									"            pm.response.to.have.status(400);",
+									"        });",
+									"",
+									"        pm.test(\"Had error message include: Name Can not be empty\", function () {",
+									"            pm.expect(jsData.error.detail.includes(\"Name Can not be empty\")).to.be.true;",
+									"        });",
+									"",
+									"        postman.setNextRequest(\"seller_create_new_role\");",
+									"        break;",
+									"    case 2:",
+									"        pm.test(\"Status code is 400\", function () {",
+									"            pm.response.to.have.status(400);",
+									"        });",
+									"        console.log(\"Error: \" + JSON.stringify(jsData));",
+									"",
+									"        postman.setNextRequest(\"seller_create_new_role\");",
+									"        break;",
+									"    case 3:",
+									"        pm.test(\"Status code is 400\", function () {",
+									"            console.log(\"Debug: \" + jsData.error.detail);",
+									"            pm.response.to.have.status(400);",
+									"        });",
+									"        ",
+									"        pm.test(\"Had error message include: Tên vai trò đã tồn tại\", function () {",
+									"            pm.expect(jsData.error.detail.includes(\"Tên vai trò đã tồn tại\")).to.be.true;",
+									"        });",
+									"",
+									"        postman.setNextRequest(\"seller_create_new_role\");",
+									"        break;",
+									"    case 4:",
+									"        pm.test(\"Status code is 200\", function () {",
+									"            pm.response.to.have.status(200);",
+									"        });",
+									"        // check data",
+									"        let role_obj = pm.environment.get(\"C-role_obj\");",
+									"        let role_id = null;",
+									"        try {",
+									"            role_id = jsData.data.id;",
+									"        } catch {",
+									"            console.log(\"Missing data\");",
+									"        }",
+									"",
+									"        pm.test(\"Got new role_id \" + role_id, function () {",
+									"            role_obj.role_id = role_id;",
+									"            pm.environment.set(\"C-role_id\",role_id);",
+									"            pm.environment.set(\"C-role_obj\",role_obj);",
+									"            pm.expect(role_id != null).to.be.true;",
+									"        });",
+									"",
+									"        pm.test(\"name correctly! \" + role_obj.name, function () {",
+									"            pm.expect(role_obj.name == jsData.data.name).to.be.true;",
+									"        });",
+									"",
+									"        pm.test(\"description correctly! \" + role_obj.description, function () {",
+									"            pm.expect(role_obj.description == jsData.data.description).to.be.true;",
+									"        });",
+									"",
+									"        pm.test(\"is_default must be false\", function () {",
+									"            pm.expect(jsData.data.is_default == false).to.be.true;",
+									"        });",
+									"",
+									"        pm.environment.unset(\"C-case_\");",
+									"        testcase++;",
+									"        pm.environment.set(\"C-testcase\",testcase);",
+									"        postman.setNextRequest(\"seller_view_list_roles\"); // seller_view_list_roles",
+									"        break;",
+									"    default:",
+									"        console.log(\"Missing flow, end test\");",
+									"        postman.setNextRequest(null);",
+									"        break;",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{C-userToken}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{{C-payload}}"
+						},
+						"url": {
+							"raw": "{{sbh_base_url}}/finan-business/api/v1/role-v2/create",
+							"host": [
+								"{{sbh_base_url}}"
+							],
+							"path": [
+								"finan-business",
+								"api",
+								"v1",
+								"role-v2",
+								"create"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "seller_update_role_permissionn",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"let testcase = pm.environment.get(\"C-testcase\");",
+									"let case_ = pm.environment.get(\"C-case_\");",
+									"if(!case_){",
+									"    case_ = 1;",
+									"} else {",
+									"    case_++;",
+									"}",
+									"pm.environment.set(\"C-case_\",case_);",
+									"console.log(\"Testcase: \" + testcase + \".\" + case_);",
+									"",
+									"/**",
+									" * Should compose cases respective with validation file",
+									" */",
+									"let list_permissions = pm.environment.get(\"C-list_permissions\");",
+									"let role_name, permission_ids = [], description;",
+									"switch(case_){",
+									"    case 1:",
+									"        // all data is null",
+									"        role_name = \"\";",
+									"        description = \"check null data\";",
+									"        permission_ids = [];",
+									"        break;",
+									"    case 2:",
+									"        // permission is null",
+									"        role_name = \"[API] Role \" + randomChars(6);",
+									"        description = \"check null permission\";",
+									"        permission_ids = [];",
+									"        break;",
+									"    case 3:",
+									"        // duplicate role name",
+									"        role_name = pm.environment.get(\"C-test_existed_role_name\");",
+									"        description = \"check existed role name\";",
+									"        permission_ids = [list_permissions[0].id];",
+									"        break;",
+									"    case 4:",
+									"        // create successful",
+									"        role_name = \"[API] Role \" + randomChars(6);",
+									"        description = \"check to create new role\";",
+									"        let rand_list = randNotDupe(0,list_permissions.length - 1,10);",
+									"        for(let i in rand_list){",
+									"            permission_ids[permission_ids.length] = list_permissions[rand_list[i]].id;",
+									"        }",
+									"        pm.environment.set(\"C-rand_list\",rand_list);",
+									"        break;",
+									"    default:",
+									"        console.log(\"Missing flow\");",
+									"        break;",
+									"}",
+									"",
+									"let payload = {",
+									"\t\"description\": description,",
+									"    \"id\": pm.environment.get(\"C-role_id\"),",
+									"\t\"business_id\": pm.environment.get(\"C-business_id\"),",
+									"\t\"name\": role_name,",
+									"\t\"permission_ids\": permission_ids",
+									"}",
+									"console.log(\"payload: \" + JSON.stringify(payload));",
+									"pm.environment.set(\"C-role_obj\",payload);",
+									"pm.environment.set(\"C-payload\",JSON.stringify(payload));",
+									"",
+									"/**",
+									" * func randNotDupe(min, max, total)",
+									" * total: số lượng random, ko dc nhỏ hơn max-min+1",
+									" * return: array",
+									" */",
+									"function randNotDupe(min, max, total){",
+									"  let arrNum = []; // new empty array",
+									"  let n, p;",
+									"  for (let i = 0; i < total; i++) {",
+									"    do {",
+									"      n = Math.floor(Math.random() * (max - min + 1)) + min;",
+									"      p = arrNum.includes(n);",
+									"      if(!p){",
+									"        arrNum.push(n);",
+									"      }",
+									"    }",
+									"    while(p);",
+									"  }",
+									"  return arrNum;",
+									"}",
+									"",
+									"//random characters",
+									"function randomChars(length) {",
+									"    var result           = '';",
+									"    var characters       = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';",
+									"    var charactersLength = characters.length;",
+									"    for ( var i = 0; i < length; i++ ) {",
+									"      result += characters.charAt(Math.floor(Math.random() * ",
+									" charactersLength));",
+									"   }",
+									"   return result;",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						},
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"let testcase = pm.environment.get(\"C-testcase\");",
+									"let case_ = pm.environment.get(\"C-case_\");",
+									"",
+									"const jsData = pm.response.json();",
+									"switch(case_){",
+									"    case 1:",
+									"        pm.test(\"Status code is 400\", function () {",
+									"            pm.response.to.have.status(400);",
+									"        });",
+									"",
+									"        pm.test(\"Had error message include: Name Can not be empty\", function () {",
+									"            pm.expect(jsData.error.detail.includes(\"Name Can not be empty\")).to.be.true;",
+									"        });",
+									"",
+									"        postman.setNextRequest(\"seller_update_role_permissionn\");",
+									"        break;",
+									"    case 2:",
+									"        pm.test(\"Status code is 400\", function () {",
+									"            pm.response.to.have.status(400);",
+									"        });",
+									"        console.log(\"Error: \" + JSON.stringify(jsData));",
+									"",
+									"        postman.setNextRequest(\"seller_update_role_permissionn\");",
+									"        break;",
+									"    case 3:",
+									"        pm.test(\"Status code is 400\", function () {",
+									"            console.log(\"Debug: \" + jsData.error.detail);",
+									"            pm.response.to.have.status(400);",
+									"        });",
+									"        ",
+									"        pm.test(\"Had error message include: Tên vai trò đã tồn tại\", function () {",
+									"            pm.expect(jsData.error.detail.includes(\"Tên vai trò đã tồn tại\")).to.be.true;",
+									"        });",
+									"",
+									"        postman.setNextRequest(\"seller_update_role_permissionn\");",
+									"        break;",
+									"    case 4:",
+									"        pm.test(\"Status code is 200\", function () {",
+									"            pm.response.to.have.status(200);",
+									"        });",
+									"        // check data",
+									"        let role_obj = pm.environment.get(\"C-role_obj\");",
+									"        pm.test(\"role_id correctly! \" + role_obj.id, function () {",
+									"            pm.expect(role_obj.id == jsData.data.id).to.be.true;",
+									"        });",
+									"",
+									"        pm.test(\"name correctly! \" + role_obj.name, function () {",
+									"            pm.expect(role_obj.name == jsData.data.name).to.be.true;",
+									"        });",
+									"",
+									"        pm.test(\"description correctly! \" + role_obj.description, function () {",
+									"            pm.expect(role_obj.description == jsData.data.description).to.be.true;",
+									"        });",
+									"",
+									"        pm.test(\"is_default must be false\", function () {",
+									"            pm.expect(jsData.data.is_default == false).to.be.true;",
+									"        });",
+									"",
+									"        pm.environment.unset(\"C-case_\");",
+									"        testcase++;",
+									"        pm.environment.set(\"C-testcase\",testcase);",
+									"        postman.setNextRequest(\"seller_view_list_roles\"); // seller_view_list_roles",
+									"        break;",
+									"    default:",
+									"        console.log(\"Missing flow, end test\");",
+									"        postman.setNextRequest(null);",
+									"        break;",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{C-userToken}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{{C-payload}}"
+						},
+						"url": {
+							"raw": "{{sbh_base_url}}/finan-business/api/v1/role-v2/update/{{C-role_id}}",
+							"host": [
+								"{{sbh_base_url}}"
+							],
+							"path": [
+								"finan-business",
+								"api",
+								"v1",
+								"role-v2",
+								"update",
+								"{{C-role_id}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "seller_delete_a_role",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"let testcase = pm.environment.get(\"C-testcase\");",
+									"console.log(\"Testcase: \" + testcase);"
+								],
+								"type": "text/javascript"
+							}
+						},
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"const jsData = pm.response.json();",
+									"if(pm.response.code == 200){",
+									"    let testcase = pm.environment.get(\"C-testcase\");",
+									"",
+									"    testcase++;",
+									"    pm.environment.set(\"C-testcase\",testcase);",
+									"    postman.setNextRequest(\"seller_view_list_roles\");",
+									"} else {",
+									"    console.log(\"Can't delete role, end test\");",
+									"    console.log(\"Error: \" + JSON.stringify(jsData));",
+									"    postman.setNextRequest(null);",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{C-userToken}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{sbh_base_url}}/finan-business/api/v1/role-v2/delete/{{C-role_id}}",
+							"host": [
+								"{{sbh_base_url}}"
+							],
+							"path": [
+								"finan-business",
+								"api",
+								"v1",
+								"role-v2",
+								"delete",
+								"{{C-role_id}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "seller_view_role_detail",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"let testcase = pm.environment.get(\"C-testcase\");",
+									"console.log(\"Testcase: \" + testcase);"
+								],
+								"type": "text/javascript"
+							}
+						},
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"// sort by key",
+									"function sortByKey(array, key) {",
+									"    return array.sort(function(a, b) {",
+									"        var x = a[key]; var y = b[key];",
+									"        return ((x < y) ? -1 : ((x > y) ? 1 : 0));",
+									"    });",
+									"}",
+									"",
+									"const jsData = pm.response.json();",
+									"",
+									"let testcase = pm.environment.get(\"C-testcase\");",
+									"",
+									"let role_obj = pm.environment.get(\"C-role_obj\");",
+									"let list_permissions = pm.environment.get(\"C-list_permissions\");",
+									"let rand_list = pm.environment.get(\"C-rand_list\");",
+									"let exp_permissions = [];",
+									"let act_permissions = [];",
+									"switch(testcase){",
+									"    case 4:",
+									"        pm.test(\"Status code is 200\", function () {",
+									"            pm.response.to.have.status(200);",
+									"        });",
+									"",
+									"        pm.test(\"name correctly! \" + role_obj.name, function () {",
+									"            pm.expect(role_obj.name == jsData.data.name).to.be.true;",
+									"        });",
+									"",
+									"        pm.test(\"description correctly! \" + role_obj.description, function () {",
+									"            pm.expect(role_obj.description == jsData.data.description).to.be.true;",
+									"        });",
+									"",
+									"        pm.test(\"is_default must be false\", function () {",
+									"            pm.expect(jsData.data.is_default == false).to.be.true;",
+									"        });",
+									"",
+									"        for(let i in rand_list){",
+									"            exp_permissions[exp_permissions.length] = {",
+									"                \"id\":list_permissions[rand_list[i]].id,",
+									"                \"name\":list_permissions[rand_list[i]].name,",
+									"                \"key\":list_permissions[rand_list[i]].key",
+									"            }",
+									"        }",
+									"        exp_permissions = sortByKey(exp_permissions,\"name\");",
+									"",
+									"        for(let j in jsData.data.permissions){",
+									"            act_permissions[act_permissions.length] = {",
+									"                \"id\":jsData.data.permissions[j].id,",
+									"                \"name\":jsData.data.permissions[j].name,",
+									"                \"key\":jsData.data.permissions[j].key",
+									"            }",
+									"        }",
+									"        act_permissions = sortByKey(act_permissions,\"name\");",
+									"",
+									"        pm.test(\"permissions correctly!\", function () {",
+									"            console.log(\"Expected: \" + JSON.stringify(exp_permissions.sort()));",
+									"            console.log(\"Actual: \" + JSON.stringify(act_permissions.sort()));",
+									"            pm.expect(JSON.stringify(exp_permissions) == JSON.stringify(act_permissions)).to.be.true;",
+									"        });",
+									"",
+									"        testcase++;",
+									"        pm.environment.set(\"C-testcase\",testcase);",
+									"        postman.setNextRequest(\"seller_update_role_permissionn\"); // seller_update_role_permissionn",
+									"        break;",
+									"    case 6:",
+									"        pm.test(\"Status code is 200\", function () {",
+									"            pm.response.to.have.status(200);",
+									"        });",
+									"",
+									"        pm.test(\"name correctly! \" + role_obj.name, function () {",
+									"            pm.expect(role_obj.name == jsData.data.name).to.be.true;",
+									"        });",
+									"",
+									"        pm.test(\"description correctly! \" + role_obj.description, function () {",
+									"            pm.expect(role_obj.description == jsData.data.description).to.be.true;",
+									"        });",
+									"",
+									"        pm.test(\"is_default must be false\", function () {",
+									"            pm.expect(jsData.data.is_default == false).to.be.true;",
+									"        });",
+									"",
+									"        // console.log(\"Debug 1: \" + JSON.stringify(exp_permissions));",
+									"        for(let i in rand_list){",
+									"            exp_permissions[exp_permissions.length] = {",
+									"                \"id\":list_permissions[rand_list[i]].id,",
+									"                \"name\":list_permissions[rand_list[i]].name,",
+									"                \"key\":list_permissions[rand_list[i]].key",
+									"            }",
+									"        }",
+									"        exp_permissions = sortByKey(exp_permissions,\"name\");",
+									"        // console.log(\"Debug 2: \" + JSON.stringify(exp_permissions));",
+									"        ",
+									"        for(let j in jsData.data.permissions){",
+									"            act_permissions[act_permissions.length] = {",
+									"                \"id\":jsData.data.permissions[j].id,",
+									"                \"name\":jsData.data.permissions[j].name,",
+									"                \"key\":jsData.data.permissions[j].key",
+									"            }",
+									"        }",
+									"        act_permissions = sortByKey(act_permissions,\"name\");",
+									"",
+									"        pm.test(\"permissions correctly!\", function () {",
+									"            console.log(\"Expected: \" + JSON.stringify(exp_permissions));",
+									"            console.log(\"Actual: \" + JSON.stringify(act_permissions));",
+									"            pm.expect(JSON.stringify(exp_permissions) == JSON.stringify(act_permissions)).to.be.true;",
+									"        });",
+									"",
+									"        testcase++;",
+									"        pm.environment.set(\"C-testcase\",testcase);",
+									"        postman.setNextRequest(\"seller_delete_a_role\"); // seller_delete_a_role",
+									"        break;",
+									"    case 8:",
+									"        pm.test(\"Status code is 404\", function () {",
+									"            pm.response.to.have.status(404);",
+									"        });",
+									"",
+									"        pm.test(\"Error include: record not found\", function () {",
+									"            pm.expect(jsData.error.detail == \"record not found\").to.be.true;",
+									"        });",
+									"",
+									"        console.log(\"--- End Testsuite 41 ---\");",
+									"        postman.setNextRequest(null);",
+									"        break;",
+									"    default:",
+									"        console.log(\"Missing flow, end test\");",
+									"        postman.setNextRequest(null);",
+									"        break;",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{C-userToken}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{sbh_base_url}}/finan-business/api/v1/role-v2/get-one/{{C-role_id}}",
+							"host": [
+								"{{sbh_base_url}}"
+							],
+							"path": [
+								"finan-business",
+								"api",
+								"v1",
+								"role-v2",
+								"get-one",
+								"{{C-role_id}}"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		}
+	]
+}

@@ -1,0 +1,521 @@
+{
+	"info": {
+		"_postman_id": "d9d03a8b-3400-41ab-8861-9c93d0a5796d",
+		"name": "sbh_47_check_list_roles_default",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"_exporter_id": "282640"
+	},
+	"item": [
+		{
+			"name": "Auth",
+			"item": [
+				{
+					"name": "verify_phone_number",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"/**",
+									" * currently, manual to create account pwd & use charles to get it",
+									" * default pwd created: 21112007 (prod with default account & no need pwd)",
+									" */",
+									"",
+									"let phone_number = pm.environment.get(\"SER-phone_number\");",
+									"console.log(\"--- Start Testsuite 47 ---\");",
+									"console.log(\" Check list roles default \");",
+									"let testcase = 1;",
+									"",
+									"console.log(\"Testcase: \" + testcase);",
+									"console.log(\"login with phone_number: \" + phone_number);",
+									"",
+									"pm.environment.set(\"C-phone_number\",phone_number);",
+									"pm.environment.set(\"C-testcase\",testcase);"
+								],
+								"type": "text/javascript"
+							}
+						},
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"if(pm.response.code == 200){",
+									"    let jsData = pm.response.json();",
+									"",
+									"    if(jsData.data.is_existed && jsData.data.has_password){",
+									"        postman.setNextRequest(\"login_with_pwd\");",
+									"    } else if(jsData.data.is_existed) {",
+									"        console.log(\"This account doesn't create pwd, please manual create!!!\");",
+									"        postman.setNextRequest(null);",
+									"    } else {",
+									"        console.log(\"Error:\", JSON.stringify(jsData));",
+									"        console.log(\"THIS ACCOUNT IS NOT EXISTED IN SYSTEM, WILL MANUAL CREATE IT\");",
+									"        postman.setNextRequest(null);",
+									"    }",
+									"} else {",
+									"    console.log(\"Error, end test\");",
+									"    postman.setNextRequest(null);",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n\t\"phone_number\": \"{{C-phone_number}}\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{sbh_base_url}}/finan-user/api/v1/auth/account/verify",
+							"host": [
+								"{{sbh_base_url}}"
+							],
+							"path": [
+								"finan-user",
+								"api",
+								"v1",
+								"auth",
+								"account",
+								"verify"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "login_with_pwd",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"// let crypto = require('crypto-js');",
+									"",
+									"// const algorithm = \"aes-256-gcm\";",
+									"// const IV_LEN = 12;",
+									"// const AUTH_TAG_LEN = 16;",
+									"// const SECRET_KEY = \"7dQ0HwRI5okvwAK0WzxaW6ABFncjeu1E\";",
+									"",
+									"// function encrypt(message) {",
+									"//   const iv = Buffer.from(crypto.randomBytes(IV_LEN));",
+									"//   const cipher = crypto.createCipheriv(algorithm, SECRET_KEY, iv, {",
+									"//     authTagLength: AUTH_TAG_LEN,",
+									"//   });",
+									"//   const encryptedData = Buffer.concat([cipher.update(message), cipher.final()]);",
+									"//   const authTag = cipher.getAuthTag();",
+									"//   const raw = Buffer.concat([iv, encryptedData, authTag]).toString(\"hex\");",
+									"//   return raw;",
+									"// }",
+									"",
+									"// const pwd = \"21112007\";",
+									"// // var superSecretEncrypted = CryptoJS.AES.encrypt(pwd, SECRET_KEY);",
+									"",
+									"// let pwd_enc = encrypt(pwd);",
+									"// console.log(\"pwd_enc: \" + pwd_enc);"
+								],
+								"type": "text/javascript"
+							}
+						},
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"if(pm.response.code == 200){",
+									"    let jsData = pm.response.json();",
+									"    // debug",
+									"    // console.log(JSON.stringify(jsData));",
+									"",
+									"    let business_id = null;",
+									"    try{",
+									"        business_id = jsData.data.business_info.list_business[0].business_id;",
+									"    } catch{",
+									"        console.log(\"This is new user, must create business_id\");",
+									"    }",
+									"",
+									"    let userToken = jsData.data.token;",
+									"    pm.environment.set(\"C-userToken\",userToken);",
+									"",
+									"    if(business_id == null){",
+									"        console.log(\"This user don't have store, please check & use another account\");",
+									"        ",
+									"        postman.setNextRequest(null);",
+									"    } else {",
+									"        let userRefreshToken = jsData.data.refresh_token;",
+									"",
+									"        let userInfo = {",
+									"            \"role_name\":jsData.data.business_info.current_role.role_name,",
+									"            \"is_owner\":jsData.data.business_info.current_role.is_owner,",
+									"            \"user_name\":jsData.data.business_info.list_business[0].user_name,",
+									"            \"business_id\":business_id",
+									"        }",
+									"",
+									"        // show log",
+									"        console.log(\"userToken:\",userToken);",
+									"        console.log(\"userRefreshToken:\",userRefreshToken);",
+									"        console.log(\"userInfo:\",JSON.stringify(userInfo));",
+									"",
+									"        pm.environment.set(\"C-userRefreshToken\",userRefreshToken);",
+									"        pm.environment.set(\"C-userInfo\",userInfo);",
+									"        pm.environment.set(\"C-business_id\",business_id);",
+									"",
+									"        let testcase = pm.environment.get(\"C-testcase\");",
+									"        testcase++;",
+									"        pm.environment.set(\"C-testcase\",testcase);",
+									"        postman.setNextRequest(\"seller_view_list_roles\");",
+									"    }",
+									"} else {",
+									"    console.log(\"Can't get Token, end test\");",
+									"",
+									"    // debug",
+									"    let jsData = pm.response.json();",
+									"    console.log(\"data:\",JSON.stringify(jsData));",
+									"",
+									"    postman.setNextRequest(null);",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n\t\"phone_number\": \"{{C-phone_number}}\",\n\t\"pwd\": \"{{pwd}}\",\n\t\"platform\": \"gtapp\",\n\t\"device_id\": \"C9102FC6-466C-4980-B795-A91A2FD7F97F\",\n\t\"app_version\": \"{{x-current-version}}\",\n\t\"device_name\": \"iPhone\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{sbh_base_url}}/finan-user/api/v1/auth/account/login",
+							"host": [
+								"{{sbh_base_url}}"
+							],
+							"path": [
+								"finan-user",
+								"api",
+								"v1",
+								"auth",
+								"account",
+								"login"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Roles",
+			"item": [
+				{
+					"name": "seller_view_list_roles",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"let testcase = pm.environment.get(\"C-testcase\");",
+									"console.log(\"Testcase: \" + testcase);",
+									"",
+									"let page = pm.environment.get(\"C-page\");",
+									"",
+									"if(!page){",
+									"    page = 1;",
+									"    let page_size = 30;",
+									"",
+									"    pm.environment.set(\"C-page\",page);",
+									"    pm.environment.set(\"C-page_size\",page_size);",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						},
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"const jsData = pm.response.json();",
+									"if(pm.response.code == 200){",
+									"    let page = pm.environment.get(\"C-page\");",
+									"    let total_pages = jsData.meta.total_pages;",
+									"",
+									"    let list_default_roles = pm.environment.get(\"C-list_default_roles\");",
+									"    if(!list_default_roles){",
+									"        list_default_roles = [];",
+									"    }",
+									"",
+									"    for(let item in jsData.data){",
+									"        if(jsData.data[item].is_default){",
+									"            list_default_roles[list_default_roles.length] = {",
+									"                \"id\":jsData.data[item].id,",
+									"                \"name\":jsData.data[item].name,",
+									"                \"description\":jsData.data[item].description,",
+									"                \"is_default\":jsData.data[item].is_default,",
+									"                \"staff\":jsData.data[item].staff",
+									"            }",
+									"        } else {",
+									"            console.log(\"Role \" + jsData.data[item].name + \" is not default\");",
+									"        }",
+									"    }",
+									"",
+									"    pm.environment.set(\"C-list_default_roles\",list_default_roles);",
+									"    if(page >= total_pages){",
+									"        // must clear page & page_size",
+									"        pm.environment.unset(\"C-page\");",
+									"        pm.environment.unset(\"C-page_size\");",
+									"",
+									"        let expected_default_role = [\"Nhân viên ghi đơn\",\"Quản lý cửa hàng\",\"Nhân viên thu ngân\",\"Nhân viên kho\"];",
+									"        let default_roles = [];",
+									"        for(let item in list_default_roles){",
+									"            default_roles[default_roles.length] = list_default_roles[item].name;",
+									"        }",
+									"",
+									"        pm.test(\"Must have 4 default roles\", function () {",
+									"            pm.expect(list_default_roles.length == 4).to.be.true;",
+									"        });",
+									"",
+									"        pm.test(\"All roles name correctly!\", function () {",
+									"            console.log(\"Expected: \" + expected_default_role.sort());",
+									"            console.log(\"Actual: \" + default_roles.sort());",
+									"            pm.expect(JSON.stringify(expected_default_role) == JSON.stringify(default_roles)).to.be.true;",
+									"        });",
+									"",
+									"        if(list_default_roles.length > 0){",
+									"            let role_pos = 0;",
+									"            let role_id = list_default_roles[role_pos].id;",
+									"",
+									"            pm.environment.set(\"C-role_pos\",role_pos);",
+									"            pm.environment.set(\"C-role_id\",role_id);",
+									"",
+									"            postman.setNextRequest(\"seller_view_role_detail\"); // seller_view_role_detail",
+									"        } else {",
+									"            pm.test(\"Missing default role, end test, please check\", function () {",
+									"                pm.expect(false).to.be.true;",
+									"            });",
+									"",
+									"            postman.setNextRequest(null);",
+									"        }",
+									"    } else {",
+									"        page++;",
+									"        pm.environment.set(\"C-page\",page);",
+									"",
+									"        console.log(\"view next page (\" + page + \") to get more roles\");",
+									"        postman.setNextRequest(\"seller_view_list_roles\");",
+									"    }",
+									"} else {",
+									"    console.log(\"Can't get list roles, end test\");",
+									"    console.log(\"Error: \" + JSON.stringify(jsData));",
+									"    postman.setNextRequest(null);",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{C-userToken}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{sbh_base_url}}/finan-business/api/v1/role-v2/get-list?page={{C-page}}&page_size={{C-page_size}}&sort=",
+							"host": [
+								"{{sbh_base_url}}"
+							],
+							"path": [
+								"finan-business",
+								"api",
+								"v1",
+								"role-v2",
+								"get-list"
+							],
+							"query": [
+								{
+									"key": "page",
+									"value": "{{C-page}}"
+								},
+								{
+									"key": "page_size",
+									"value": "{{C-page_size}}"
+								},
+								{
+									"key": "sort",
+									"value": ""
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "seller_view_role_detail",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"let testcase = pm.environment.get(\"C-testcase\");",
+									"console.log(\"Testcase: \" + testcase);"
+								],
+								"type": "text/javascript"
+							}
+						},
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"const jsData = pm.response.json();",
+									"if(pm.response.code == 200){",
+									"    let list_default_roles = pm.environment.get(\"C-list_default_roles\");",
+									"    let role_pos = pm.environment.get(\"C-role_pos\");",
+									"",
+									"    let list_premissions = [];",
+									"    for(let item in jsData.data.permissions){",
+									"        list_premissions[list_premissions.length] = {",
+									"            \"id\":jsData.data.permissions[item].id,",
+									"            \"name\":jsData.data.permissions[item].name,",
+									"            \"description\":jsData.data.permissions[item].description,",
+									"            \"key\":jsData.data.permissions[item].key,",
+									"            \"is_active\":jsData.data.permissions[item].is_active",
+									"        }",
+									"    }",
+									"    list_default_roles[role_pos].list_premissions = list_premissions;",
+									"    pm.environment.set(\"C-list_default_roles\",list_default_roles);",
+									"    // console.log(\"Full permissions for \" + list_default_roles[role_pos].name + \": \" + JSON.stringify(list_premissions));",
+									"",
+									"    /**",
+									"     * Update: Sprint 9 (19Jul2023)",
+									"     * - Nhân viên ghi đơn: thêm 1 permission",
+									"     * - Nhân viên thu ngân: thêm 1 permission",
+									"     * - Nhân viên kho: thêm 2 permission",
+									"     * - Quản lý cửa hàng: thêm 3 permission",
+									"     * Note: 3 permissions mới thêm vào liên quan đến Kho (Tạo, Huỷ, In phiếu xuất hàng)",
+									"     */",
+									"    console.log(\"debug: \" + jsData.data.permissions.length);",
+									"    switch(list_default_roles[role_pos].name){",
+									"        case \"Nhân viên ghi đơn\":",
+									"            pm.test(\"Total default permissions for `Nhân viên ghi đơn` must be 15\", function () {",
+									"                pm.expect(jsData.data.permissions.length == 15).to.be.true;",
+									"            });",
+									"            break;",
+									"        case \"Quản lý cửa hàng\":",
+									"            pm.test(\"Total default permissions for `Quản lý cửa hàng` must be 81\", function () {",
+									"                pm.expect(jsData.data.permissions.length == 81).to.be.true;",
+									"            });",
+									"            break;",
+									"        case \"Nhân viên thu ngân\":",
+									"            pm.test(\"Total default permissions for `Nhân viên thu ngân` must be 21\", function () {",
+									"                pm.expect(jsData.data.permissions.length == 21).to.be.true;",
+									"            });",
+									"            break;",
+									"        case \"Nhân viên kho\":",
+									"            pm.test(\"Total default permissions for `Nhân viên kho` must be 24\", function () {",
+									"                pm.expect(jsData.data.permissions.length == 24).to.be.true;",
+									"            });",
+									"            break;",
+									"        default:",
+									"            pm.test(\"Default name had changed, please check\", function () {",
+									"                pm.expect(false).to.be.true;",
+									"            });",
+									"            break;",
+									"    }",
+									"",
+									"    if(role_pos >= (list_default_roles.length - 1)){",
+									"        // console.log(\"Full default roles & permissions: \" + JSON.stringify(list_default_roles));",
+									"        ",
+									"        console.log(\"--- End Testsuite 47 ---\");",
+									"        postman.setNextRequest(null);",
+									"    } else {",
+									"        role_pos++;",
+									"        pm.environment.set(\"C-role_pos\",role_pos);",
+									"        pm.environment.set(\"C-role_id\",list_default_roles[role_pos].id);",
+									"        postman.setNextRequest(\"seller_view_role_detail\");",
+									"    }",
+									"} else {",
+									"    console.log(\"Can't get role detail, end test\");",
+									"    console.log(\"Error: \" + JSON.stringify(jsData));",
+									"    postman.setNextRequest(null);",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{C-userToken}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{sbh_base_url}}/finan-business/api/v1/role-v2/get-one/{{C-role_id}}",
+							"host": [
+								"{{sbh_base_url}}"
+							],
+							"path": [
+								"finan-business",
+								"api",
+								"v1",
+								"role-v2",
+								"get-one",
+								"{{C-role_id}}"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		}
+	]
+}

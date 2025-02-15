@@ -1,0 +1,1346 @@
+{
+	"info": {
+		"_postman_id": "7f61219d-82a5-430e-99ec-07234ccd25b8",
+		"name": "sbh_92_check_to_create_stocktake_include_uom_product",
+		"description": "### Testsuite: create stocktake with uom product\n\nTestcase:\n\n1. Login with Seller Account (owner) => get business_id\n    \n2. Get info:\n    \n    1. Get list products in stock (only has list_sku_uom)\n        \n    2. Get stock summary\n        \n    3. View list PO (purchase order) => get total\n        \n3. Create new Stocktake (\\*) with status = processing (Chưa cân bằng) => data cần lưu lại:\n    \n    1. IN / OUT\n        \n    2. Số lượng tương ứng\n        \n    3. Giá vốn / bán\n        \n4. Check:\n    \n    1. List PO: increase 1\n        \n    2. PO detail: matching info\n        \n    3. List products in stock => nothing happen",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"_exporter_id": "282640"
+	},
+	"item": [
+		{
+			"name": "Auth",
+			"item": [
+				{
+					"name": "verify_phone_number",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"/**",
+									" * currently, manual to create account pwd & use charles to get it",
+									" * default pwd created: 21112007 (prod with default account & no need pwd)",
+									" */",
+									"",
+									"let phone_number = pm.environment.get(\"SER-phone_number\");",
+									"console.log(\"--- Start Testsuite 92 ---\");",
+									"let testcase = 1;",
+									"",
+									"console.log(\"Testcase: \" + testcase);",
+									"console.log(\"login with phone_number: \" + phone_number);",
+									"",
+									"pm.environment.set(\"C-phone_number\",phone_number);",
+									"pm.environment.set(\"C-testcase\",testcase);"
+								],
+								"type": "text/javascript"
+							}
+						},
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"if(pm.response.code == 200){",
+									"    let jsData = pm.response.json();",
+									"",
+									"    if(jsData.data.is_existed && jsData.data.has_password){",
+									"        postman.setNextRequest(\"login_with_pwd\");",
+									"    } else if(jsData.data.is_existed) {",
+									"        console.log(\"This account doesn't create pwd, please manual create!!!\");",
+									"        postman.setNextRequest(null);",
+									"    } else {",
+									"        console.log(\"Error:\", JSON.stringify(jsData));",
+									"        console.log(\"THIS ACCOUNT IS NOT EXISTED IN SYSTEM, WILL MANUAL CREATE IT\");",
+									"        postman.setNextRequest(null);",
+									"    }",
+									"} else {",
+									"    console.log(\"Error, end test\");",
+									"    postman.setNextRequest(null);",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n\t\"phone_number\": \"{{C-phone_number}}\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{sbh_base_url}}/finan-user/api/v1/auth/account/verify",
+							"host": [
+								"{{sbh_base_url}}"
+							],
+							"path": [
+								"finan-user",
+								"api",
+								"v1",
+								"auth",
+								"account",
+								"verify"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "login_with_pwd",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"// let crypto = require('crypto-js');",
+									"",
+									"// const algorithm = \"aes-256-gcm\";",
+									"// const IV_LEN = 12;",
+									"// const AUTH_TAG_LEN = 16;",
+									"// const SECRET_KEY = \"7dQ0HwRI5okvwAK0WzxaW6ABFncjeu1E\";",
+									"",
+									"// function encrypt(message) {",
+									"//   const iv = Buffer.from(crypto.randomBytes(IV_LEN));",
+									"//   const cipher = crypto.createCipheriv(algorithm, SECRET_KEY, iv, {",
+									"//     authTagLength: AUTH_TAG_LEN,",
+									"//   });",
+									"//   const encryptedData = Buffer.concat([cipher.update(message), cipher.final()]);",
+									"//   const authTag = cipher.getAuthTag();",
+									"//   const raw = Buffer.concat([iv, encryptedData, authTag]).toString(\"hex\");",
+									"//   return raw;",
+									"// }",
+									"",
+									"// const pwd = \"21112007\";",
+									"// // var superSecretEncrypted = CryptoJS.AES.encrypt(pwd, SECRET_KEY);",
+									"",
+									"// let pwd_enc = encrypt(pwd);",
+									"// console.log(\"pwd_enc: \" + pwd_enc);"
+								],
+								"type": "text/javascript"
+							}
+						},
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"if(pm.response.code == 200){",
+									"    let jsData = pm.response.json();",
+									"    // debug",
+									"    // console.log(JSON.stringify(jsData));",
+									"",
+									"    let business_id = null;",
+									"    try{",
+									"        business_id = jsData.data.business_info.list_business[0].business_id;",
+									"    } catch{",
+									"        console.log(\"This is new user, must create business_id\");",
+									"    }",
+									"",
+									"    let userToken = jsData.data.token;",
+									"    pm.environment.set(\"C-userToken\",userToken);",
+									"",
+									"    if(business_id == null){",
+									"        console.log(\"This user don't have store, please check & use another account\");",
+									"        ",
+									"        postman.setNextRequest(null);",
+									"    } else {",
+									"        let userRefreshToken = jsData.data.refresh_token;",
+									"",
+									"        let userInfo = {",
+									"            \"role_name\":jsData.data.business_info.current_role.role_name,",
+									"            \"is_owner\":jsData.data.business_info.current_role.is_owner,",
+									"            \"user_name\":jsData.data.business_info.list_business[0].user_name,",
+									"            \"business_id\":business_id",
+									"        }",
+									"",
+									"        // show log",
+									"        // console.log(\"userToken:\",userToken);",
+									"        // console.log(\"userRefreshToken:\",userRefreshToken);",
+									"        console.log(\"userInfo:\",JSON.stringify(userInfo));",
+									"",
+									"        pm.environment.set(\"C-userRefreshToken\",userRefreshToken);",
+									"        pm.environment.set(\"C-userInfo\",userInfo);",
+									"        pm.environment.set(\"C-business_id\",business_id);",
+									"",
+									"        let testcase = pm.environment.get(\"C-testcase\");",
+									"        testcase++;",
+									"        pm.environment.set(\"C-testcase\",testcase);",
+									"        postman.setNextRequest(\"seller_view_list_products_in_stock\");",
+									"    }",
+									"} else {",
+									"    console.log(\"Can't get Token, end test\");",
+									"",
+									"    // debug",
+									"    let jsData = pm.response.json();",
+									"    console.log(\"data:\",JSON.stringify(jsData));",
+									"",
+									"    postman.setNextRequest(null);",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n\t\"phone_number\": \"{{C-phone_number}}\",\n\t\"pwd\": \"{{pwd}}\",\n\t\"platform\": \"gtapp\",\n\t\"device_id\": \"C9102FC6-466C-4980-B795-A91A2FD7F97F\",\n\t\"app_version\": \"{{x-current-version}}\",\n\t\"device_name\": \"iPhone\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{sbh_base_url}}/finan-user/api/v1/auth/account/login",
+							"host": [
+								"{{sbh_base_url}}"
+							],
+							"path": [
+								"finan-user",
+								"api",
+								"v1",
+								"auth",
+								"account",
+								"login"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Product",
+			"item": [
+				{
+					"name": "seller_view_list_products_in_stock",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"let testcase = pm.environment.get(\"C-testcase\");",
+									"console.log(\"Testcase: \" + testcase);",
+									"",
+									"let page = pm.environment.get(\"C-page\");",
+									"",
+									"if(!page){",
+									"    page = 1;",
+									"}",
+									"pm.environment.set(\"C-page\",page);",
+									"",
+									"let page_size = 300;",
+									"pm.environment.set(\"C-page_size\",page_size);"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						},
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"if(pm.response.code == 200){",
+									"    let jsData = JSON.parse(responseBody);",
+									"    let total_pages = jsData.meta.total_pages;",
+									"    let page = pm.environment.get(\"C-page\");",
+									"    let list_sku_in_stock = pm.environment.get(\"C-list_sku_in_stock\");",
+									"    if(!list_sku_in_stock){",
+									"        list_sku_in_stock = [];",
+									"    }",
+									"",
+									"    for(let item in jsData.data){",
+									"        // only get product had stock ",
+									"        // if(jsData.data[item].type == \"stock_variant\" || jsData.data[item].type == \"stock_non_varriant\"){",
+									"        if(jsData.data[item].uom != \"\"){",
+									"            list_sku_in_stock[list_sku_in_stock.length] = {",
+									"                \"sku_id\":jsData.data[item].id,",
+									"                \"business_id\":jsData.data[item].business_id,",
+									"                \"product_id\":jsData.data[item].product_id,",
+									"                \"product_name\":jsData.data[item].product_name,",
+									"                \"type\":jsData.data[item].type,",
+									"                \"uom\":jsData.data[item].uom,",
+									"                \"list_sku_uom\":jsData.data[item].list_sku_uom,",
+									"                \"product_type\":jsData.data[item].product_type,",
+									"                \"sku_name\":jsData.data[item].sku_name,",
+									"                \"sku_code\":jsData.data[item].sku_code,",
+									"                \"total_quantity\":jsData.data[item].total_quantity,",
+									"                \"historical_cost\":jsData.data[item].historical_cost,",
+									"                \"normal_price\":jsData.data[item].normal_price,",
+									"                \"can_pick_quantity\":jsData.data[item].can_pick_quantity",
+									"            }",
+									"        } else {",
+									"            // console.log(\"Product name: \" + jsData.data[item].product_name);",
+									"            // console.log(\"Sku name: \" + jsData.data[item].sku_name);",
+									"            // console.log(\"--- type: \" + jsData.data[item].type);",
+									"            // console.log(\"--- can_pick_quantity: \" + jsData.data[item].can_pick_quantity);",
+									"            // console.log(\"--- total_quantity: \" + jsData.data[item].total_quantity);",
+									"        }",
+									"    }",
+									"    pm.environment.set(\"C-list_sku_in_stock\",list_sku_in_stock);",
+									"",
+									"    if(page >= total_pages){",
+									"        // must clear page & page_size",
+									"        pm.environment.unset(\"C-page\");",
+									"        pm.environment.unset(\"C-page_size\");",
+									"",
+									"        console.log(\"Total sku has list_sku_uom: \" + list_sku_in_stock.length);",
+									"        // console.log(\"list_sku_in_stock: \" + JSON.stringify(list_sku_in_stock));",
+									"",
+									"        postman.setNextRequest(\"seller_view_stock_summary\"); // seller_view_stock_summary",
+									"    } else {",
+									"        page++;",
+									"        pm.environment.set(\"C-page\",page);",
+									"",
+									"        console.log(\"view next page (\" + page + \") to get more orders\");",
+									"        postman.setNextRequest(\"seller_view_list_products_in_stock\");",
+									"    }",
+									"} else {",
+									"    console.log(\"Can't get list product in stock, end test\");",
+									"    postman.setNextRequest(null);",
+									"}"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{C-userToken}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{sbh_base_url}}/finan-product/api/v1/product/get-all-product-in-stock?business_id={{C-business_id}}&page={{C-page}}&page_size={{C-page_size}}&search=&sort=&category_id=",
+							"host": [
+								"{{sbh_base_url}}"
+							],
+							"path": [
+								"finan-product",
+								"api",
+								"v1",
+								"product",
+								"get-all-product-in-stock"
+							],
+							"query": [
+								{
+									"key": "business_id",
+									"value": "{{C-business_id}}"
+								},
+								{
+									"key": "page",
+									"value": "{{C-page}}"
+								},
+								{
+									"key": "page_size",
+									"value": "{{C-page_size}}"
+								},
+								{
+									"key": "search",
+									"value": ""
+								},
+								{
+									"key": "sort",
+									"value": ""
+								},
+								{
+									"key": "category_id",
+									"value": ""
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "check_list_products_in_stock",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"let testcase = pm.environment.get(\"C-testcase\");",
+									"console.log(\"Testcase: \" + testcase);",
+									"",
+									"let page = pm.environment.get(\"C-page\");",
+									"",
+									"if(!page){",
+									"    page = 1;",
+									"}",
+									"pm.environment.set(\"C-page\",page);",
+									"",
+									"let page_size = 300;",
+									"pm.environment.set(\"C-page_size\",page_size);"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						},
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"if(pm.response.code == 200){",
+									"    let jsData = JSON.parse(responseBody);",
+									"    let total_pages = jsData.meta.total_pages;",
+									"    let page = pm.environment.get(\"C-page\");",
+									"    let new_list_sku_in_stock = pm.environment.get(\"C-new_list_sku_in_stock\");",
+									"    if(!new_list_sku_in_stock){",
+									"        new_list_sku_in_stock = [];",
+									"    }",
+									"",
+									"    for(let item in jsData.data){",
+									"        // only get product had stock",
+									"        if(jsData.data[item].uom != \"\"){",
+									"            new_list_sku_in_stock[new_list_sku_in_stock.length] = {",
+									"                \"sku_id\":jsData.data[item].id,",
+									"                \"business_id\":jsData.data[item].business_id,",
+									"                \"product_id\":jsData.data[item].product_id,",
+									"                \"product_name\":jsData.data[item].product_name,",
+									"                \"type\":jsData.data[item].type,",
+									"                \"uom\":jsData.data[item].uom,",
+									"                \"product_type\":jsData.data[item].product_type,",
+									"                \"sku_name\":jsData.data[item].sku_name,",
+									"                \"sku_code\":jsData.data[item].sku_code,",
+									"                \"total_quantity\":jsData.data[item].total_quantity,",
+									"                \"historical_cost\":jsData.data[item].historical_cost,",
+									"                \"normal_price\":jsData.data[item].normal_price,",
+									"                \"can_pick_quantity\":jsData.data[item].can_pick_quantity",
+									"            }",
+									"        }",
+									"    }",
+									"    pm.environment.set(\"C-new_list_sku_in_stock\",new_list_sku_in_stock);",
+									"",
+									"    if(page >= total_pages){",
+									"        // must clear page & page_size",
+									"        pm.environment.unset(\"C-page\");",
+									"        pm.environment.unset(\"C-page_size\");",
+									"",
+									"        let list_sku_in_stock = pm.environment.get(\"C-list_sku_in_stock\");",
+									"        let testcase = pm.environment.get(\"C-testcase\");",
+									"",
+									"        // check",
+									"        pm.test(\"Nothing happen with products in stock\", function () {",
+									"            // console.log(\"Expected: \" + JSON.stringify(list_sku_in_stock));",
+									"            // console.log(\"Actual: \" + JSON.stringify(new_list_sku_in_stock));",
+									"            pm.expect(JSON.stringify(list_sku_in_stock) == JSON.stringify(new_list_sku_in_stock)).to.be.true;",
+									"        });",
+									"",
+									"        pm.environment.unset(\"C-testcase\");",
+									"        console.log(\"--- End Testsuite 92 ---\");",
+									"        postman.setNextRequest(null);",
+									"    } else {",
+									"        page++;",
+									"        pm.environment.set(\"C-page\",page);",
+									"",
+									"        console.log(\"view next page (\" + page + \") to get more orders\");",
+									"        postman.setNextRequest(\"check_list_products_in_stock\");",
+									"    }",
+									"} else {",
+									"    console.log(\"Can't get list product in stock, end test\");",
+									"    postman.setNextRequest(null);",
+									"}"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{C-userToken}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{sbh_base_url}}/finan-product/api/v1/product/get-all-product-in-stock?business_id={{C-business_id}}&page={{C-page}}&page_size={{C-page_size}}&search=&sort=&category_id=",
+							"host": [
+								"{{sbh_base_url}}"
+							],
+							"path": [
+								"finan-product",
+								"api",
+								"v1",
+								"product",
+								"get-all-product-in-stock"
+							],
+							"query": [
+								{
+									"key": "business_id",
+									"value": "{{C-business_id}}"
+								},
+								{
+									"key": "page",
+									"value": "{{C-page}}"
+								},
+								{
+									"key": "page_size",
+									"value": "{{C-page_size}}"
+								},
+								{
+									"key": "search",
+									"value": ""
+								},
+								{
+									"key": "sort",
+									"value": ""
+								},
+								{
+									"key": "category_id",
+									"value": ""
+								}
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Warehouse",
+			"item": [
+				{
+					"name": "seller_view_stock_summary",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"if(pm.response.code == 200){",
+									"    let jsData = pm.response.json();",
+									"    console.log(\"debug: \" + JSON.stringify(jsData));",
+									"    // let list_sku = pm.environment.get(\"C-list_sku\");",
+									"    let list_sku_in_stock = pm.environment.get(\"C-list_sku_in_stock\");",
+									"    let total_quantity = 0, total_amount = 0;",
+									"    for(let item in list_sku_in_stock){",
+									"        total_quantity += list_sku_in_stock[item].total_quantity;",
+									"        // can_pick_quantity có thể < total_quantity nếu có set số lượng ko bán",
+									"        total_amount += list_sku_in_stock[item].total_quantity*list_sku_in_stock[item].historical_cost;",
+									"    }",
+									"",
+									"    // pm.test(\"total_quantity is \" + total_quantity, function () {",
+									"    //     console.log(\"Expected: \" + total_quantity);",
+									"    //     console.log(\"Actual: \" + jsData.data.total_quantity);",
+									"    //     pm.expect(total_quantity == jsData.data.total_quantity).to.be.true;",
+									"    // });",
+									"",
+									"    // pm.test(\"total_amount is \" + total_amount, function () {",
+									"    //     console.log(\"Expected: \" + total_amount);",
+									"    //     console.log(\"Actual: \" + jsData.data.total_amount);",
+									"    //     pm.expect(total_amount == jsData.data.total_amount).to.be.true;",
+									"    // });",
+									"",
+									"    postman.setNextRequest(\"get_list_po\"); // get_list_po",
+									"} else {",
+									"    console.log(\"Can't get stock summary, end test\");",
+									"    postman.setNextRequest(null);",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						},
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"let testcase = pm.environment.get(\"C-testcase\");",
+									"console.log(\"Testcase: \" + testcase);"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{C-userToken}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{sbh_base_url}}/ms-warehouse-management/api/v2/warehouse/get-summary?business_id={{C-business_id}}",
+							"host": [
+								"{{sbh_base_url}}"
+							],
+							"path": [
+								"ms-warehouse-management",
+								"api",
+								"v2",
+								"warehouse",
+								"get-summary"
+							],
+							"query": [
+								{
+									"key": "business_id",
+									"value": "{{C-business_id}}"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "get_list_po",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"let testcase = pm.environment.get(\"C-testcase\");",
+									"console.log(\"Testcase: \" + testcase);",
+									"",
+									"// lấy full tháng hiện tại",
+									"// let today = new Date();",
+									"// let firstDay = new Date(today.getFullYear(), today.getMonth(), 1);",
+									"// let start_time= firstDay.toISOString();",
+									"// let lastDay = new Date(today.getFullYear(), today.getMonth() + 1, 1);",
+									"// let end_time= lastDay.toISOString();",
+									"",
+									"let today = new Date();",
+									"let startDay = new Date(today.getFullYear(), today.getMonth(), today.getDate(), 0, 0 ,0, 0);",
+									"let start_today= startDay.toISOString();",
+									"console.log(\"start_today: \" + start_today);",
+									"",
+									"let endDay = new Date(today.getFullYear(), today.getMonth(), today.getDate(), 23, 59 ,59, 0);",
+									"let end_today= endDay.toISOString();",
+									"console.log(\"end_today: \" + end_today);",
+									"",
+									"pm.environment.set(\"C-start_today\",start_today);",
+									"pm.environment.set(\"C-end_today\",end_today);"
+								],
+								"type": "text/javascript"
+							}
+						},
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"if(pm.response.code == 200){",
+									"    const jsData = pm.response.json();",
+									"    let total_po = null;",
+									"    try {",
+									"        total_po = jsData.meta.total_rows;",
+									"    } catch {",
+									"        console.log(\"Missing meta\");",
+									"    }",
+									"",
+									"    pm.test(\"Got total po \" + total_po, function () {",
+									"        pm.expect(total_po != null).to.be.true;",
+									"    });",
+									"    pm.environment.set(\"C-total_po\",total_po);",
+									"",
+									"    let testcase = pm.environment.get(\"C-testcase\");",
+									"    testcase++;",
+									"    pm.environment.set(\"C-testcase\",testcase);",
+									"    postman.setNextRequest(\"create_stocktake\"); //create_stocktake",
+									"} else {",
+									"    console.log(\"Can't get po list in today, end test\");",
+									"    postman.setNextRequest(null);",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{C-userToken}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{sbh_base_url}}/ms-warehouse-management/api/v1/purchase-order/get-list?business_id={{C-business_id}}&start_time={{C-start_today}}&end_time={{C-end_today}}&page=1&page_size=30&po_type=&sort=created_at desc",
+							"host": [
+								"{{sbh_base_url}}"
+							],
+							"path": [
+								"ms-warehouse-management",
+								"api",
+								"v1",
+								"purchase-order",
+								"get-list"
+							],
+							"query": [
+								{
+									"key": "business_id",
+									"value": "{{C-business_id}}"
+								},
+								{
+									"key": "start_time",
+									"value": "{{C-start_today}}",
+									"description": "2023-06-25T17:00:00Z"
+								},
+								{
+									"key": "end_time",
+									"value": "{{C-end_today}}",
+									"description": "2023-06-26T16:59:59Z"
+								},
+								{
+									"key": "page",
+									"value": "1"
+								},
+								{
+									"key": "page_size",
+									"value": "30"
+								},
+								{
+									"key": "po_type",
+									"value": "",
+									"description": "other => kiểm kho"
+								},
+								{
+									"key": "sort",
+									"value": "created_at desc"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "create_stocktake",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"// random number between min and max",
+									"function getRandomInt(min, max) {",
+									"  \treturn Math.floor(Math.random() * (max - min + 1)) + min;",
+									"}",
+									"",
+									"//random characters",
+									"function randomChars(length) {",
+									"    var result           = '';",
+									"    var characters       = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';",
+									"    var charactersLength = characters.length;",
+									"    for ( var i = 0; i < length; i++ ) {",
+									"      result += characters.charAt(Math.floor(Math.random() * ",
+									" charactersLength));",
+									"   }",
+									"   return result;",
+									"}",
+									"",
+									"let testcase = pm.environment.get(\"C-testcase\");",
+									"console.log(\"Testcase: \" + testcase);",
+									"",
+									"let randomVariant = getRandomInt(2,3);",
+									"console.log(\"Create stocktake with \" + randomVariant + \" sku\");",
+									"",
+									"let list_sku_in_stock = pm.environment.get(\"C-list_sku_in_stock\");",
+									"let list_sku_stocktake = [];",
+									"let list_sku = [];",
+									"for(let total = randomVariant; total > 0; total--){",
+									"    let randomPos = getRandomInt(0,list_sku_in_stock.length - 1);",
+									"    let randomQuantity = getRandomInt(1,3);",
+									"    // console.log(\"randomPos: \" + randomPos);",
+									"",
+									"    list_sku_stocktake[list_sku_stocktake.length] = list_sku_in_stock[randomPos];",
+									"    if(getRandomInt(0,1)){",
+									"        list_sku_stocktake[list_sku_stocktake.length - 1].stock_quantity = list_sku_stocktake[list_sku_stocktake.length - 1].can_pick_quantity + randomQuantity;",
+									"        // list_sku_in_stock[randomPos].stock_quantity = list_sku_stocktake[list_sku_stocktake.length - 1].stock_quantity;",
+									"    } else {",
+									"        list_sku_stocktake[list_sku_stocktake.length - 1].stock_quantity = list_sku_stocktake[list_sku_stocktake.length - 1].can_pick_quantity - randomQuantity;",
+									"        // list_sku_in_stock[randomPos].stock_quantity = list_sku_stocktake[list_sku_stocktake.length - 1].stock_quantity;",
+									"    }",
+									"",
+									"    list_sku[list_sku.length] = {",
+									"        \"sku_id\":list_sku_stocktake[list_sku_stocktake.length - 1].sku_id,",
+									"        \"after_change_quantity\":list_sku_stocktake[list_sku_stocktake.length - 1].stock_quantity",
+									"    }",
+									"}",
+									"",
+									"console.log(\"list_sku_stocktake: \" + JSON.stringify(list_sku_stocktake));",
+									"",
+									"let note = \"CL kiểm kho tăng hoặc giảm - \" + randomChars(5);",
+									"",
+									"let payload = {",
+									"\t\"note\": note,",
+									"\t\"status\": \"processing\",",
+									"\t\"po_details\":list_sku,",
+									"\t\"business_id\":pm.environment.get(\"C-business_id\"),",
+									"\t\"media\": [],",
+									"\t\"po_type\": \"other\",",
+									"\t\"type\": \"stocktake\",",
+									"\t\"option\": \"create_po\",",
+									"\t\"po_detail_ingredient\": []",
+									"}",
+									"",
+									"console.log(\"payload: \" + JSON.stringify(payload));",
+									"",
+									"pm.environment.set(\"C-list_sku_stocktake\",list_sku_stocktake);",
+									"// pm.environment.set(\"C-list_sku_in_stock\",list_sku_in_stock);",
+									"pm.environment.set(\"C-note\",note);",
+									"pm.environment.set(\"C-randomVariant\",randomVariant);",
+									"pm.environment.set(\"C-payload\",JSON.stringify(payload));"
+								],
+								"type": "text/javascript"
+							}
+						},
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"if(pm.response.code == 200) {",
+									"    const jsData = pm.response.json();",
+									"    console.log(\"debug: \" + JSON.stringify(jsData));",
+									"    let stocktake_id = null;",
+									"    try {",
+									"        stocktake_id = jsData.data.id;",
+									"    } catch {",
+									"        console.log(\"Missing stocktake_id\");",
+									"    }",
+									"    let note = pm.environment.get(\"C-note\");",
+									"    let randomVariant = pm.environment.get(\"C-randomVariant\");",
+									"",
+									"    // stocktake_id",
+									"    pm.test(\"Got stocktake_id\", function () {",
+									"        pm.environment.set(\"C-stocktake_id\",stocktake_id)",
+									"        pm.expect(stocktake_id != null).to.be.true;",
+									"    });",
+									"",
+									"    // status",
+									"    pm.test(\"status is processing\", function () {",
+									"        pm.expect(jsData.data.status == \"processing\").to.be.true;",
+									"    });",
+									"",
+									"    // type",
+									"    pm.test(\"type is stocktake\", function () {",
+									"        pm.expect(jsData.data.type == \"stocktake\").to.be.true;",
+									"    });",
+									"",
+									"    // po_type",
+									"    pm.test(\"po_type is other\", function () {",
+									"        pm.expect(jsData.data.po_type == \"other\").to.be.true;",
+									"    });",
+									"",
+									"    // note",
+									"    pm.test(\"note is \" + note, function () {",
+									"        pm.expect(jsData.data.note == note).to.be.true;",
+									"    });",
+									"",
+									"    // total_items",
+									"    pm.test(\"total_items is \" + randomVariant, function () {",
+									"        console.log(\"Expected: \" + randomVariant);",
+									"        console.log(\"Actual: \" + jsData.data.total_items);",
+									"        pm.expect(jsData.data.total_items == randomVariant).to.be.true;",
+									"    });",
+									"",
+									"    // // total_quantity => UI tự tín dựa vào po_details và po_ingerdients",
+									"    // let total_quantity = 0;",
+									"    let list_sku_stocktake = pm.environment.get(\"C-list_sku_stocktake\");",
+									"    // for(let item in list_sku_stocktake){",
+									"    //     total_quantity += list_sku_stocktake[item].stock_quantity - list_sku_stocktake[item].can_pick_quantity;",
+									"    // }",
+									"",
+									"    // pm.test(\"total_quantity is \" + total_quantity, function () {",
+									"    //     console.log(\"Expected: \" + total_quantity);",
+									"    //     console.log(\"Actual: \" + jsData.data.total_quantity);",
+									"    //     pm.expect(jsData.data.total_quantity == total_quantity).to.be.true;",
+									"    // });",
+									"",
+									"    // po_details",
+									"    let expected_po_detail = [];",
+									"    for(let item1 in list_sku_stocktake){",
+									"        let transaction_type, quantity;",
+									"        if(list_sku_stocktake[item1].stock_quantity > list_sku_stocktake[item1].can_pick_quantity){",
+									"            transaction_type = \"in\";",
+									"            quantity = list_sku_stocktake[item1].stock_quantity - list_sku_stocktake[item1].can_pick_quantity;",
+									"        } else {",
+									"            transaction_type = \"out\";",
+									"            quantity = list_sku_stocktake[item1].can_pick_quantity - list_sku_stocktake[item1].stock_quantity;",
+									"        }",
+									"",
+									"        expected_po_detail[expected_po_detail.length] = {",
+									"            \"sku_id\":list_sku_stocktake[item1].sku_id,",
+									"            \"pricing\":list_sku_stocktake[item1].historical_cost,",
+									"            \"transaction_type\":transaction_type,",
+									"            \"quantity\":quantity,",
+									"            \"before_change_quantity\":list_sku_stocktake[item1].can_pick_quantity,",
+									"            \"after_change_quantity\":list_sku_stocktake[item1].stock_quantity",
+									"        }",
+									"    }",
+									"",
+									"    let actual_po_detail = [];",
+									"    for(let item in jsData.data.po_details){",
+									"        actual_po_detail[actual_po_detail.length] = {",
+									"            \"sku_id\":jsData.data.po_details[item].sku_info.sku_id,",
+									"            \"pricing\":jsData.data.po_details[item].pricing,",
+									"            \"transaction_type\":jsData.data.po_details[item].transaction_type,",
+									"            \"quantity\":jsData.data.po_details[item].quantity,",
+									"            \"before_change_quantity\":jsData.data.po_details[item].before_change_quantity,",
+									"            \"after_change_quantity\":jsData.data.po_details[item].after_change_quantity",
+									"        }",
+									"    }",
+									"",
+									"    pm.test(\"po_details is correctly!!!\", function () {",
+									"        console.log(\"Expected: \" + JSON.stringify(expected_po_detail));",
+									"        console.log(\"Actual: \" + JSON.stringify(actual_po_detail));",
+									"        pm.expect(JSON.stringify(actual_po_detail) == JSON.stringify(expected_po_detail)).to.be.true;",
+									"    });",
+									"",
+									"    // // total_amount => UI ko có phần amount",
+									"    // let total_amount = 0;",
+									"    // for(let item in list_sku_stocktake){",
+									"    //     total_amount += (list_sku_stocktake[item].stock_quantity - list_sku_stocktake[item].can_pick_quantity)*list_sku_stocktake[item].historical_cost;",
+									"    // }",
+									"",
+									"    // pm.test(\"total_amount is \" + total_amount, function () {",
+									"    //     console.log(\"Expected: \" + total_amount);",
+									"    //     console.log(\"Actual: \" + jsData.data.total_amount);",
+									"    //     pm.expect(jsData.data.total_amount == total_amount).to.be.true;",
+									"    // });",
+									"",
+									"    let testcase = pm.environment.get(\"C-testcase\");",
+									"    if(testcase == 3){",
+									"        // check data",
+									"        testcase++;",
+									"        pm.environment.set(\"C-testcase\",testcase);",
+									"        postman.setNextRequest(\"check_list_po\"); // check_list_po",
+									"    } else {",
+									"        // testcase == 7",
+									"        postman.setNextRequest(null);",
+									"    }",
+									"} else {",
+									"    console.log(\"Can't create stocktake, end test\");",
+									"    postman.setNextRequest(null);",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{C-userToken}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{{C-payload}}"
+						},
+						"url": {
+							"raw": "{{sbh_base_url}}/ms-warehouse-management/api/v1/po/create-stocktake",
+							"host": [
+								"{{sbh_base_url}}"
+							],
+							"path": [
+								"ms-warehouse-management",
+								"api",
+								"v1",
+								"po",
+								"create-stocktake"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "check_list_po",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"let testcase = pm.environment.get(\"C-testcase\");",
+									"console.log(\"Testcase: \" + testcase);"
+								],
+								"type": "text/javascript"
+							}
+						},
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"if(pm.response.code == 200){",
+									"    const jsData = pm.response.json();",
+									"    let total_po = jsData.meta.total_rows;",
+									"    let testcase = pm.environment.get(\"C-testcase\");",
+									"    let old_total_po = pm.environment.get(\"C-total_po\");",
+									"",
+									"    // check list increase 1",
+									"    pm.test(\"meta.total_rows increase 1\", function () {",
+									"        console.log(\"Expected: \" + (old_total_po + 1));",
+									"        console.log(\"Actual: \" + total_po);",
+									"        pm.expect(old_total_po + 1 == total_po).to.be.true;",
+									"    });",
+									"",
+									"    // check some info of new PO",
+									"    // po_id",
+									"    let stocktake_id = pm.environment.get(\"C-stocktake_id\");",
+									"    pm.test(\"Had po_id \" + stocktake_id + \" in first list\", function () {",
+									"        pm.expect(stocktake_id == jsData.data[0].id).to.be.true;",
+									"    });",
+									"",
+									"    // po_type",
+									"    pm.test(\"po_type must be other\", function () {",
+									"        pm.expect(jsData.data[0].po_type == \"other\").to.be.true;",
+									"    });",
+									"",
+									"    // note",
+									"    let note = pm.environment.get(\"C-note\");",
+									"    pm.test(\"note must be \" + note, function () {",
+									"        pm.expect(jsData.data[0].note == note).to.be.true;",
+									"    });",
+									"",
+									"    // total_items",
+									"    let total_items = pm.environment.get(\"C-randomVariant\");",
+									"    pm.test(\"total_items must be \" + total_items, function () {",
+									"        pm.expect(jsData.data[0].total_items == total_items).to.be.true;",
+									"    });",
+									"",
+									"    // total_quantity",
+									"    // total_amount",
+									"",
+									"    // status",
+									"    pm.test(\"status must be processing\", function () {",
+									"        pm.expect(jsData.data[0].status == \"processing\").to.be.true;",
+									"    });",
+									"",
+									"    // type ",
+									"    pm.test(\"type must be stocktake\", function () {",
+									"        pm.expect(jsData.data[0].type == \"stocktake\").to.be.true;",
+									"    });",
+									"",
+									"    // total_before_change_quantity => UI ko cần 2 fields này, khi nào cần sẽ mở ra check",
+									"    // let list_sku_stocktake = pm.environment.get(\"C-list_sku_stocktake\");",
+									"    // let total_before_change_quantity = 0;",
+									"    // let total_after_change_quantity = 0;",
+									"    // for(let item in list_sku_stocktake){",
+									"    //     total_before_change_quantity += list_sku_stocktake[item].total_quantity;",
+									"    //     total_after_change_quantity += list_sku_stocktake[item].stock_quantity;",
+									"    // }",
+									"",
+									"    // pm.test(\"total_before_change_quantity is \" + total_before_change_quantity, function () {",
+									"    //     console.log(\"Expected: \" + total_before_change_quantity);",
+									"    //     console.log(\"Actual: \" + jsData.data[0].total_before_change_quantity);",
+									"    //     pm.expect(total_before_change_quantity == jsData.data[0].total_before_change_quantity).to.be.true;",
+									"    // });",
+									"",
+									"    // total_after_change_quantity",
+									"    // pm.test(\"total_after_change_quantity is \" + total_after_change_quantity, function () {",
+									"    //     console.log(\"Expected: \" + total_after_change_quantity);",
+									"    //     console.log(\"Actual: \" + jsData.data[0].total_after_change_quantity);",
+									"    //     pm.expect(total_after_change_quantity == jsData.data[0].total_after_change_quantity).to.be.true;",
+									"    // });",
+									"",
+									"    postman.setNextRequest(\"seller_view_stocktake_detail\"); // seller_view_stocktake_detail",
+									"} else {",
+									"    console.log(\"Can't get list po, end test\");",
+									"    postman.setNextRequest(null);",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{C-userToken}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{sbh_base_url}}/ms-warehouse-management/api/v1/purchase-order/get-list?business_id={{C-business_id}}&start_time={{C-start_today}}&end_time={{C-end_today}}&page=1&page_size=30&po_type=&sort=created_at desc",
+							"host": [
+								"{{sbh_base_url}}"
+							],
+							"path": [
+								"ms-warehouse-management",
+								"api",
+								"v1",
+								"purchase-order",
+								"get-list"
+							],
+							"query": [
+								{
+									"key": "business_id",
+									"value": "{{C-business_id}}"
+								},
+								{
+									"key": "start_time",
+									"value": "{{C-start_today}}",
+									"description": "2023-06-25T17:00:00Z"
+								},
+								{
+									"key": "end_time",
+									"value": "{{C-end_today}}",
+									"description": "2023-06-26T16:59:59Z"
+								},
+								{
+									"key": "page",
+									"value": "1"
+								},
+								{
+									"key": "page_size",
+									"value": "30"
+								},
+								{
+									"key": "po_type",
+									"value": ""
+								},
+								{
+									"key": "sort",
+									"value": "created_at desc"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "seller_view_stocktake_detail",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"if(pm.response.code == 200){",
+									"    let jsData = pm.response.json();",
+									"    let testcase = pm.environment.get(\"C-testcase\");",
+									"",
+									"    // check",
+									"    // po_type",
+									"    pm.test(\"po_type must be other\", function () {",
+									"        pm.expect(jsData.data.po_type == \"other\").to.be.true;",
+									"    });",
+									"",
+									"    // note",
+									"    let note = pm.environment.get(\"C-note\");",
+									"    pm.test(\"note must be \" + note, function () {",
+									"        pm.expect(jsData.data.note == note).to.be.true;",
+									"    });",
+									"",
+									"    // total_items",
+									"    let total_items = pm.environment.get(\"C-randomVariant\");",
+									"    pm.test(\"total_items must be \" + total_items, function () {",
+									"        pm.expect(jsData.data.total_items == total_items).to.be.true;",
+									"    });",
+									"",
+									"    // total_quantity",
+									"    // total_amount",
+									"",
+									"    // status",
+									"    pm.test(\"status must be processing\", function () {",
+									"        pm.expect(jsData.data.status == \"processing\").to.be.true;",
+									"    });",
+									"",
+									"    // list_item",
+									"    let list_sku_stocktake = pm.environment.get(\"C-list_sku_stocktake\");",
+									"    let expected_list_item = [];",
+									"    for(let i in list_sku_stocktake){",
+									"        expected_list_item[expected_list_item.length] = {",
+									"            \"sku_id\":list_sku_stocktake[i].sku_id,",
+									"            \"before_change_quantity\":list_sku_stocktake[i].can_pick_quantity,",
+									"            \"after_change_quantity\":list_sku_stocktake[i].stock_quantity",
+									"        }",
+									"    }",
+									"",
+									"    let actual_list_item = [];",
+									"    for(let j in jsData.data.list_item){",
+									"        actual_list_item[actual_list_item.length] = {",
+									"            \"sku_id\":jsData.data.list_item[j].id,",
+									"            \"before_change_quantity\":jsData.data.list_item[j].before_change_quantity,",
+									"            \"after_change_quantity\":jsData.data.list_item[j].after_change_quantity",
+									"        }",
+									"    }",
+									"    pm.test(\"list_item is correctly!!!\", function () {",
+									"        console.log(\"Expected: \" + JSON.stringify(expected_list_item));",
+									"        console.log(\"Actual: \" + JSON.stringify(actual_list_item));",
+									"        pm.expect(JSON.stringify(expected_list_item) == JSON.stringify(actual_list_item)).to.be.true;",
+									"    });",
+									"",
+									"    // total_before_change_quantity",
+									"    let total_before_change_quantity = 0;",
+									"    let total_after_change_quantity = 0;",
+									"    for(let item in list_sku_stocktake){",
+									"        total_before_change_quantity += list_sku_stocktake[item].total_quantity;",
+									"        total_after_change_quantity += list_sku_stocktake[item].stock_quantity;",
+									"    }",
+									"",
+									"    pm.test(\"total_before_change_quantity is \" + total_before_change_quantity, function () {",
+									"        console.log(\"Expected: \" + total_before_change_quantity);",
+									"        console.log(\"Actual: \" + jsData.data.total_before_change_quantity);",
+									"        pm.expect(total_before_change_quantity == jsData.data.total_before_change_quantity).to.be.true;",
+									"    });",
+									"",
+									"    // total_after_change_quantity",
+									"    pm.test(\"total_after_change_quantity is \" + total_after_change_quantity, function () {",
+									"        console.log(\"Expected: \" + total_after_change_quantity);",
+									"        console.log(\"Actual: \" + jsData.data.total_after_change_quantity);",
+									"        pm.expect(total_after_change_quantity == jsData.data.total_after_change_quantity).to.be.true;",
+									"    });",
+									"",
+									"    postman.setNextRequest(\"check_list_products_in_stock\"); // check_list_products_in_stock",
+									"} else {",
+									"    console.log(\"Can't get po detail, end test\");",
+									"    postman.setNextRequest(null);",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						},
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"let testcase = pm.environment.get(\"C-testcase\");",
+									"console.log(\"Testcase: \" + testcase);"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{C-userToken}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{sbh_base_url}}/ms-warehouse-management/api/v3/purchase-order/get-detail?id={{C-stocktake_id}}",
+							"host": [
+								"{{sbh_base_url}}"
+							],
+							"path": [
+								"ms-warehouse-management",
+								"api",
+								"v3",
+								"purchase-order",
+								"get-detail"
+							],
+							"query": [
+								{
+									"key": "id",
+									"value": "{{C-stocktake_id}}"
+								},
+								{
+									"key": "business_id",
+									"value": "{{C-business_id}}",
+									"disabled": true
+								},
+								{
+									"key": "po_code",
+									"value": "KK12",
+									"disabled": true
+								},
+								{
+									"key": "is_staff",
+									"value": "true",
+									"disabled": true
+								}
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		}
+	]
+}

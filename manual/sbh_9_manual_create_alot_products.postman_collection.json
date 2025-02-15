@@ -1,0 +1,530 @@
+{
+	"info": {
+		"_postman_id": "dc012de0-dbfd-4a14-8768-92ef43e63f03",
+		"name": "sbh_9_manual_create_alot_products",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"_exporter_id": "282640"
+	},
+	"item": [
+		{
+			"name": "Auth",
+			"item": [
+				{
+					"name": "request_generate_otp",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"//random characters",
+									"function randomChars(length) {",
+									"    var result           = '';",
+									"    var characters       = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';",
+									"    var charactersLength = characters.length;",
+									"    for ( var i = 0; i < length; i++ ) {",
+									"      result += characters.charAt(Math.floor(Math.random() * ",
+									" charactersLength));",
+									"   }",
+									"   return result;",
+									"}",
+									"",
+									"//random number between min and max",
+									"function getRandomInt(min, max) {",
+									"  \treturn Math.floor(Math.random() * (max - min + 1)) + min;",
+									"}",
+									"",
+									"let secret_key = randomChars(40);",
+									"let platfrom_list = [\"pro_web\",\"stapp\"];",
+									"let device_id = randomChars(8) + \"-\" + randomChars(4) + \"-\" + randomChars(4) + \"-\" + randomChars(4) + \"-\" + randomChars(12);",
+									"let platform = platfrom_list[getRandomInt(0,platfrom_list.length - 1)];",
+									"",
+									"// debug",
+									"console.log(\"platform: \" + platform);",
+									"console.log(\"device_id: \" + device_id);",
+									"console.log(\"secret_key: \" + secret_key);",
+									"",
+									"let phone_number = pm.environment.get(\"SER-phone_number\")",
+									"pm.environment.set(\"C-phone_number\",phone_number);",
+									"pm.environment.set(\"C-platform\",platform);",
+									"pm.environment.set(\"C-device_id\",device_id);",
+									"pm.environment.set(\"C-secret_key\",secret_key);"
+								],
+								"type": "text/javascript"
+							}
+						},
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"if(pm.response.code == 200){",
+									"    let jsData = pm.response.json();",
+									"",
+									"    if(jsData.data.status == \"created\"){",
+									"        postman.setNextRequest(\"get_user_token_via_otp\");",
+									"    } else {",
+									"        console.log(\"Error:\", JSON.stringify(jsData));",
+									"        postman.setNextRequest(null);",
+									"    }",
+									"} else {",
+									"    console.log(\"Error, end test\");",
+									"    postman.setNextRequest(null);",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"platform\": \"{{C-platform}}\",\n    \"phone_number\":\"{{C-phone_number}}\",\n    \"secret_key\":\"{{C-secret_key}}\",\n    \"device_id\":\"{{C-device_id}}\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{sbh_base_url}}/finan-user/api/v1/auth/otp/generate",
+							"host": [
+								"{{sbh_base_url}}"
+							],
+							"path": [
+								"finan-user",
+								"api",
+								"v1",
+								"auth",
+								"otp",
+								"generate"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "get_user_token_via_otp",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"//fix for DEV n STAGING: otp = 1207",
+									"",
+									"// note: newman can't parse with note in body raw type"
+								],
+								"type": "text/javascript"
+							}
+						},
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"if(pm.response.code == 200){",
+									"    let jsData = pm.response.json();",
+									"    // debug",
+									"    // console.log(JSON.stringify(jsData));",
+									"",
+									"    let business_id = null;",
+									"    try{",
+									"        business_id = jsData.data.business_info.list_business[0].business_id;",
+									"    } catch{",
+									"        console.log(\"This is new user, must create business_id\");",
+									"    }",
+									"",
+									"    let userToken = jsData.data.token;",
+									"    pm.environment.set(\"C-userToken\",userToken);",
+									"",
+									"    if(business_id == null){",
+									"        postman.setNextRequest(null);",
+									"    } else {",
+									"        let userRefreshToken = jsData.data.refresh_token;",
+									"",
+									"        let userInfo = {",
+									"            \"role_name\":jsData.data.business_info.current_role.role_name,",
+									"            \"is_owner\":jsData.data.business_info.current_role.is_owner,",
+									"            \"user_name\":jsData.data.business_info.list_business[0].user_name,",
+									"            \"business_id\":business_id",
+									"        }",
+									"",
+									"        // show log",
+									"        console.log(\"userToken:\",userToken);",
+									"        console.log(\"userRefreshToken:\",userRefreshToken);",
+									"        console.log(\"userInfo:\",JSON.stringify(userInfo));",
+									"",
+									"        pm.environment.set(\"C-userRefreshToken\",userRefreshToken);",
+									"        pm.environment.set(\"C-userInfo\",userInfo);",
+									"        pm.environment.set(\"C-business_id\",business_id);",
+									"",
+									"        postman.setNextRequest(\"create_new_product\");",
+									"    }",
+									"} else {",
+									"    console.log(\"Can't get Token, end test\");",
+									"    postman.setNextRequest(null);",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json",
+								"type": "text",
+								"disabled": true
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"platform\": \"{{C-platform}}\",\n    \"otp\":\"1207\",\n    \"phone_number\":\"{{C-phone_number}}\",\n    \"secret_key\":\"{{C-secret_key}}\",\n    \"device_id\":\"{{C-device_id}}\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{sbh_base_url}}/finan-user/api/v1/auth/otp/confirm",
+							"host": [
+								"{{sbh_base_url}}"
+							],
+							"path": [
+								"finan-user",
+								"api",
+								"v1",
+								"auth",
+								"otp",
+								"confirm"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Product - Seller",
+			"item": [
+				{
+					"name": "create_new_product",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"//random characters",
+									"function randomChars(length) {",
+									"    var result           = '';",
+									"    var characters       = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';",
+									"    var charactersLength = characters.length;",
+									"    for ( var i = 0; i < length; i++ ) {",
+									"      result += characters.charAt(Math.floor(Math.random() * ",
+									" charactersLength));",
+									"   }",
+									"   return result;",
+									"}",
+									"",
+									"//random number between min and max",
+									"function getRandomInt(min, max) {",
+									"  \treturn Math.floor(Math.random() * (max - min + 1)) + min;",
+									"}",
+									"",
+									"let userInfo = pm.environment.get(\"C-userInfo\");",
+									"let uomList = [\"Lon\",\"Ly\",\"Cai\"];",
+									"let variantColor = [{\"name\": \"Đỏ\"}, {\"name\": \"Đen\"}, {\"name\": \"Vàng\"}];",
+									"let variantSize = [{\"name\": \"Lớn\"}, {\"name\": \"Nhỏ\"}];",
+									"",
+									"let randomCase = getRandomInt(1,3);",
+									"let list_variant = [], list_sku = [], sku, prioritySKU = 1;",
+									"let attributeName1, attributeName2, attributeTypeName1, attributeTypeName2;",
+									"let randomCost;",
+									"switch(randomCase){",
+									"    case 1:",
+									"        // use color & size",
+									"        list_variant[list_variant.length] = {",
+									"            \"name\":\"Màu sắc\",",
+									"            \"list_attribute\":variantColor",
+									"        };",
+									"        list_variant[list_variant.length] = {",
+									"            \"name\":\"Size\",",
+									"            \"list_attribute\":variantSize",
+									"        };",
+									"",
+									"        for(let item1 in list_variant[0].list_attribute){",
+									"            attributeTypeName1 = list_variant[0].name;",
+									"            attributeTypeName2 = list_variant[1].name;",
+									"            for(let item2 in list_variant[1].list_attribute){",
+									"                attributeName1 = list_variant[0].list_attribute[item1].name;",
+									"                attributeName2 = list_variant[1].list_attribute[item2].name;",
+									"                randomCost = getRandomInt(1,100)*1000;",
+									"                sku = {",
+									"                    \"attribute_types\":[",
+									"                        {",
+									"                            \"attribute\":attributeName1,",
+									"                            \"attribute_type\":attributeTypeName1",
+									"                        },",
+									"                        {",
+									"                            \"attribute\":attributeName2,",
+									"                            \"attribute_type\":attributeTypeName2",
+									"                        }",
+									"                    ],",
+									"                    \"barcode\":\"\",",
+									"                    \"business_id\":userInfo.business_id,",
+									"                    \"hide_sku\":false,",
+									"                    \"historical_cost\":randomCost,",
+									"                    \"id\":\"00000000-0000-0000-0000-000000000000\",",
+									"                    \"is_active\":true,",
+									"                    \"media\":[],",
+									"                    \"name\": attributeName1 + \" - \" + attributeName2,",
+									"                    \"normal_price\":randomCost + 11000,",
+									"                    \"number_attribute_type\":0,",
+									"                    \"po_details\":{",
+									"                        \"blocked_quantity\":0,",
+									"                        \"delivering_quantity\":0,",
+									"                        \"note\":\"\",",
+									"                        \"pricing\":randomCost,",
+									"                        \"quantity\":getRandomInt(5,50),",
+									"                        \"warning_value\":0",
+									"                    },",
+									"                    \"priority\":prioritySKU,",
+									"                    \"product_id\":null,",
+									"                    \"range_wholesale_price\":[],",
+									"                    \"selling_price\":0,",
+									"                    \"sku_code\":\"\",",
+									"                    \"sku_type\":\"stock\",",
+									"                    \"total_quantity\":0,",
+									"                    \"uom\":\"\",",
+									"                    \"wholesale_price\":0",
+									"                };",
+									"                list_sku[list_sku.length] = sku;",
+									"                prioritySKU += 1;",
+									"            }",
+									"        }",
+									"",
+									"        break;",
+									"    case 2:",
+									"        // use color only",
+									"        list_variant[list_variant.length] = {",
+									"            \"name\":\"Màu sắc\",",
+									"            \"list_attribute\":variantColor",
+									"        };",
+									"",
+									"        for(let item1 in list_variant[0].list_attribute){",
+									"            attributeTypeName1 = list_variant[0].name;",
+									"            attributeName1 = list_variant[0].list_attribute[item1].name;",
+									"            randomCost = getRandomInt(1,100)*1000;",
+									"            sku = {",
+									"                \"attribute_types\":[",
+									"                    {",
+									"                        \"attribute\":attributeName1,",
+									"                        \"attribute_type\":attributeTypeName1",
+									"                    }",
+									"                ],",
+									"                \"barcode\":\"\",",
+									"                \"business_id\":userInfo.business_id,",
+									"                \"hide_sku\":false,",
+									"                \"historical_cost\":randomCost,",
+									"                \"id\":\"00000000-0000-0000-0000-000000000000\",",
+									"                \"is_active\":true,",
+									"                \"media\":[],",
+									"                \"name\": attributeName1,",
+									"                \"normal_price\":randomCost + 11000,",
+									"                \"number_attribute_type\":0,",
+									"                \"po_details\":{",
+									"                    \"blocked_quantity\":0,",
+									"                    \"delivering_quantity\":0,",
+									"                    \"note\":\"\",",
+									"                    \"pricing\":randomCost,",
+									"                    \"quantity\":getRandomInt(5,50),",
+									"                    \"warning_value\":0",
+									"                },",
+									"                \"priority\":prioritySKU,",
+									"                \"product_id\":null,",
+									"                \"range_wholesale_price\":[],",
+									"                \"selling_price\":0,",
+									"                \"sku_code\":\"\",",
+									"                \"sku_type\":\"stock\",",
+									"                \"total_quantity\":0,",
+									"                \"uom\":\"\",",
+									"                \"wholesale_price\":0",
+									"            };",
+									"            list_sku[list_sku.length] = sku;",
+									"            prioritySKU += 1;",
+									"        }",
+									"",
+									"        break;",
+									"    case 3:",
+									"        // use size only",
+									"        list_variant[list_variant.length] = {",
+									"            \"name\":\"Size\",",
+									"            \"list_attribute\":variantSize",
+									"        };",
+									"",
+									"        for(let item1 in list_variant[0].list_attribute){",
+									"            attributeTypeName1 = list_variant[0].name;",
+									"            attributeName1 = list_variant[0].list_attribute[item1].name;",
+									"            randomCost = getRandomInt(1,100)*1000;",
+									"            sku = {",
+									"                \"attribute_types\":[",
+									"                    {",
+									"                        \"attribute\":attributeName1,",
+									"                        \"attribute_type\":attributeTypeName1",
+									"                    }",
+									"                ],",
+									"                \"barcode\":\"\",",
+									"                \"business_id\":userInfo.business_id,",
+									"                \"hide_sku\":false,",
+									"                \"historical_cost\":randomCost,",
+									"                \"id\":\"00000000-0000-0000-0000-000000000000\",",
+									"                \"is_active\":true,",
+									"                \"media\":[],",
+									"                \"name\": attributeName1,",
+									"                \"normal_price\":randomCost + 11000,",
+									"                \"number_attribute_type\":0,",
+									"                \"po_details\":{",
+									"                    \"blocked_quantity\":0,",
+									"                    \"delivering_quantity\":0,",
+									"                    \"note\":\"\",",
+									"                    \"pricing\":randomCost,",
+									"                    \"quantity\":getRandomInt(5,50),",
+									"                    \"warning_value\":0",
+									"                },",
+									"                \"priority\":prioritySKU,",
+									"                \"product_id\":null,",
+									"                \"range_wholesale_price\":[],",
+									"                \"selling_price\":0,",
+									"                \"sku_code\":\"\",",
+									"                \"sku_type\":\"stock\",",
+									"                \"total_quantity\":0,",
+									"                \"uom\":\"\",",
+									"                \"wholesale_price\":0",
+									"            };",
+									"            list_sku[list_sku.length] = sku;",
+									"            prioritySKU += 1;",
+									"        }",
+									"",
+									"        break;",
+									"    default:",
+									"        // don't use variant",
+									"",
+									"        break;",
+									"}",
+									"",
+									"// console.log(\"list_sku\",JSON.stringify(list_sku));",
+									"let payload = {",
+									"    \"barcode\": \"\",",
+									"    \"business_id\": userInfo.business_id,",
+									"    \"category_ids\": [],",
+									"    \"client_id\": \"9d41d8e9-f775-4ad5-b501-f6efa3a80b54\",",
+									"    \"description\": \"\",",
+									"    \"description_rtf\": \"\",",
+									"    \"images\": [],",
+									"    \"is_active\": true,",
+									"    \"list_sku\": list_sku,",
+									"    \"list_variant\": list_variant,",
+									"    \"name\": \"CL - Sản Phẩm \" + randomChars(10),",
+									"    \"priority\": 1,",
+									"    \"product_add_on_group_ids\": [],",
+									"    \"product_type\": \"variant\",",
+									"    \"show_on_store\":true,",
+									"    \"show_price\": true,",
+									"    \"sku_code\": \"\",",
+									"    \"tag_id\": \"00000000-0000-0000-0000-000000000000\",",
+									"    \"uom\": uomList[getRandomInt(0,uomList.length - 1)]",
+									"};",
+									"",
+									"// console.log(\"payload\", JSON.stringify(payload));",
+									"pm.environment.set(\"C-payload\",JSON.stringify(payload));"
+								],
+								"type": "text/javascript"
+							}
+						},
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"let total_product_want_to_create = 5;",
+									"let createdProduct = pm.environment.get(\"C-createdProduct\");",
+									"",
+									"if(!createdProduct){",
+									"    createdProduct = 1;",
+									"} else {",
+									"    createdProduct++;",
+									"}",
+									"pm.environment.set(\"C-createdProduct\",createdProduct);",
+									"",
+									"if(createdProduct >= total_product_want_to_create){",
+									"    postman.setNextRequest(null);",
+									"} else {",
+									"    postman.setNextRequest(\"create_new_product\");",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{C-userToken}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{{C-payload}}"
+						},
+						"url": {
+							"raw": "{{sbh_base_url}}/finan-product/api/v1/product/create",
+							"host": [
+								"{{sbh_base_url}}"
+							],
+							"path": [
+								"finan-product",
+								"api",
+								"v1",
+								"product",
+								"create"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		}
+	]
+}

@@ -1,0 +1,1082 @@
+{
+	"info": {
+		"_postman_id": "dd6a7a47-2055-4291-bc45-7a61d222d3ef",
+		"name": "sbh_7_create_new_ingredient_via_app",
+		"description": "#### **Testsuite: Create new ingerdient**\n\n##### Testcase:\n\n1. Login seller account\n2. Get list default uom\n3. Get list ingredients\n4. Get ingredient summary\n5. Create new ingredient\n    1. Null data\n    2. Name more 30 characters\n    3. price < 0\n    4. Happy case\n6. Check list ingredients\n7. Check ingredient summary",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"_exporter_id": "282640"
+	},
+	"item": [
+		{
+			"name": "Auth",
+			"item": [
+				{
+					"name": "verify_phone_number",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"/**",
+									" * currently, manual to create account pwd & use charles to get it",
+									" * default pwd created: 21112007 (prod with default account & no need pwd)",
+									" */",
+									"",
+									"let phone_number = pm.environment.get(\"SER-phone_number\");",
+									"console.log(\"--- Start Testsuite 7 ---\");",
+									"let testcase = 1;",
+									"",
+									"console.log(\"Testcase: \" + testcase);",
+									"console.log(\"login with phone_number: \" + phone_number);",
+									"",
+									"pm.environment.set(\"C-phone_number\",phone_number);",
+									"pm.environment.set(\"C-testcase\",testcase);"
+								],
+								"type": "text/javascript"
+							}
+						},
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"if(pm.response.code == 200){",
+									"    let jsData = pm.response.json();",
+									"",
+									"    if(jsData.data.is_existed && jsData.data.has_password){",
+									"        postman.setNextRequest(\"login_with_pwd\");",
+									"    } else if(jsData.data.is_existed) {",
+									"        console.log(\"This account doesn't create pwd, please manual create!!!\");",
+									"        postman.setNextRequest(null);",
+									"    } else {",
+									"        console.log(\"Error:\", JSON.stringify(jsData));",
+									"        console.log(\"THIS ACCOUNT IS NOT EXISTED IN SYSTEM, WILL MANUAL CREATE IT\");",
+									"        postman.setNextRequest(null);",
+									"    }",
+									"} else {",
+									"    console.log(\"Error, end test\");",
+									"    postman.setNextRequest(null);",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n\t\"phone_number\": \"{{C-phone_number}}\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{sbh_base_url}}/finan-user/api/v1/auth/account/verify",
+							"host": [
+								"{{sbh_base_url}}"
+							],
+							"path": [
+								"finan-user",
+								"api",
+								"v1",
+								"auth",
+								"account",
+								"verify"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "login_with_pwd",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"// let crypto = require('crypto-js');",
+									"",
+									"// const algorithm = \"aes-256-gcm\";",
+									"// const IV_LEN = 12;",
+									"// const AUTH_TAG_LEN = 16;",
+									"// const SECRET_KEY = \"7dQ0HwRI5okvwAK0WzxaW6ABFncjeu1E\";",
+									"",
+									"// function encrypt(message) {",
+									"//   const iv = Buffer.from(crypto.randomBytes(IV_LEN));",
+									"//   const cipher = crypto.createCipheriv(algorithm, SECRET_KEY, iv, {",
+									"//     authTagLength: AUTH_TAG_LEN,",
+									"//   });",
+									"//   const encryptedData = Buffer.concat([cipher.update(message), cipher.final()]);",
+									"//   const authTag = cipher.getAuthTag();",
+									"//   const raw = Buffer.concat([iv, encryptedData, authTag]).toString(\"hex\");",
+									"//   return raw;",
+									"// }",
+									"",
+									"// const pwd = \"21112007\";",
+									"// // var superSecretEncrypted = CryptoJS.AES.encrypt(pwd, SECRET_KEY);",
+									"",
+									"// let pwd_enc = encrypt(pwd);",
+									"// console.log(\"pwd_enc: \" + pwd_enc);"
+								],
+								"type": "text/javascript"
+							}
+						},
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"if(pm.response.code == 200){",
+									"    let jsData = pm.response.json();",
+									"    // debug",
+									"    // console.log(JSON.stringify(jsData));",
+									"",
+									"    let business_id = null;",
+									"    try{",
+									"        business_id = jsData.data.business_info.list_business[0].business_id;",
+									"    } catch{",
+									"        console.log(\"This is new user, must create business_id\");",
+									"    }",
+									"",
+									"    let userToken = jsData.data.token;",
+									"    pm.environment.set(\"C-userToken\",userToken);",
+									"",
+									"    if(business_id == null){",
+									"        console.log(\"This account don't have business_id, run flow 2 to create, end test\");",
+									"        postman.setNextRequest(null);",
+									"    } else {",
+									"        let userRefreshToken = jsData.data.refresh_token;",
+									"",
+									"        let userInfo = {",
+									"            \"role_name\":jsData.data.business_info.current_role.role_name,",
+									"            \"is_owner\":jsData.data.business_info.current_role.is_owner,",
+									"            \"user_name\":jsData.data.business_info.list_business[0].user_name,",
+									"            \"business_id\":business_id",
+									"        }",
+									"",
+									"        // show log",
+									"        // console.log(\"userToken:\",userToken);",
+									"        // console.log(\"userRefreshToken:\",userRefreshToken);",
+									"        console.log(\"userInfo:\",JSON.stringify(userInfo));",
+									"",
+									"        pm.environment.set(\"C-userRefreshToken\",userRefreshToken);",
+									"        pm.environment.set(\"C-userInfo\",userInfo);",
+									"        pm.environment.set(\"C-business_id\",business_id);",
+									"",
+									"        let testcase = pm.environment.get(\"C-testcase\");",
+									"        testcase++;",
+									"        pm.environment.set(\"C-testcase\",testcase);",
+									"        postman.setNextRequest(\"get_list_default_uom\");",
+									"    }",
+									"} else {",
+									"    console.log(\"Can't get Token, end test\");",
+									"    postman.setNextRequest(null);",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n\t\"phone_number\": \"{{C-phone_number}}\",\n\t\"pwd\": \"{{pwd}}\",\n\t\"platform\": \"gtapp\",\n\t\"device_id\": \"C9102FC6-466C-4980-B795-A91A2FD7F97F\",\n\t\"app_version\": \"{{x-current-version}}\",\n\t\"device_name\": \"iPhone\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{sbh_base_url}}/finan-user/api/v1/auth/account/login",
+							"host": [
+								"{{sbh_base_url}}"
+							],
+							"path": [
+								"finan-user",
+								"api",
+								"v1",
+								"auth",
+								"account",
+								"login"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "request_generate_otp",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"console.log(\"--- Start Testsuite 7 ---\");",
+									"pm.environment.set(\"C-testcase\",1);",
+									"",
+									"//random characters",
+									"function randomChars(length) {",
+									"    var result           = '';",
+									"    var characters       = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';",
+									"    var charactersLength = characters.length;",
+									"    for ( var i = 0; i < length; i++ ) {",
+									"      result += characters.charAt(Math.floor(Math.random() * ",
+									" charactersLength));",
+									"   }",
+									"   return result;",
+									"}",
+									"",
+									"//random number between min and max",
+									"function getRandomInt(min, max) {",
+									"  \treturn Math.floor(Math.random() * (max - min + 1)) + min;",
+									"}",
+									"",
+									"let secret_key = randomChars(40);",
+									"let platfrom_list = [\"pro_web\",\"stapp\",\"buyer_web\"];",
+									"let device_id = randomChars(8) + \"-\" + randomChars(4) + \"-\" + randomChars(4) + \"-\" + randomChars(4) + \"-\" + randomChars(12);",
+									"",
+									"let phone_number = pm.environment.get(\"SER-phone_number\")",
+									"pm.environment.set(\"C-phone_number\",phone_number);",
+									"pm.environment.set(\"C-device_id\",device_id);",
+									"pm.environment.set(\"C-secret_key\",secret_key);",
+									"",
+									"let platform = platfrom_list[0];//platfrom_list[getRandomInt(0,platfrom_list.length - 1)];",
+									"pm.environment.set(\"C-platform\",platform);",
+									"let payload = {",
+									"    \"platform\": platform,",
+									"    \"phone_number\":phone_number,",
+									"    \"device_id\":device_id",
+									"}",
+									"// debug",
+									"console.log(\"payload: \" + JSON.stringify(payload));",
+									"pm.environment.set(\"C-payload\",JSON.stringify(payload));"
+								],
+								"type": "text/javascript"
+							}
+						},
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"if(pm.response.code == 200){",
+									"    let jsData = pm.response.json();",
+									"",
+									"    if(jsData.data.status == \"created\"){",
+									"        postman.setNextRequest(\"get_user_token_via_otp\");",
+									"    } else {",
+									"        console.log(\"Error:\", JSON.stringify(jsData));",
+									"        postman.setNextRequest(null);",
+									"    }",
+									"} else {",
+									"    console.log(\"Error, end test\");",
+									"    postman.setNextRequest(null);",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{{C-payload}}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{sbh_base_url}}/finan-user/api/v1/auth/otp/generate",
+							"host": [
+								"{{sbh_base_url}}"
+							],
+							"path": [
+								"finan-user",
+								"api",
+								"v1",
+								"auth",
+								"otp",
+								"generate"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "get_user_token_via_otp",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"/**",
+									" * fix for DEV n STAGING: otp = 1207",
+									" * note: newman can't parse with note in body raw type",
+									" * UPDATE 05SEP2023: http change to https",
+									" */",
+									"",
+									"let payload = {",
+									"    \"platform\":pm.environment.get(\"C-platform\"),",
+									"    \"otp\":\"1207\",",
+									"    \"phone_number\":pm.environment.get(\"C-phone_number\"),",
+									"    \"device_id\":pm.environment.get(\"C-device_id\")",
+									"}",
+									"pm.environment.set(\"C-payload\",JSON.stringify(payload));"
+								],
+								"type": "text/javascript"
+							}
+						},
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"if(pm.response.code == 200){",
+									"    let jsData = pm.response.json();",
+									"    // debug",
+									"    // console.log(JSON.stringify(jsData));",
+									"",
+									"    let business_id = null;",
+									"    try{",
+									"        business_id = jsData.data.business_info.list_business[0].business_id;",
+									"    } catch{",
+									"        console.log(\"This is new user, must create business_id\");",
+									"    }",
+									"",
+									"    let userToken = jsData.data.token;",
+									"    pm.environment.set(\"C-userToken\",userToken);",
+									"",
+									"    if(business_id == null){",
+									"        console.log(\"This account don't have business_id, run flow 2 to create, end test\");",
+									"        postman.setNextRequest(null);",
+									"    } else {",
+									"        let userRefreshToken = jsData.data.refresh_token;",
+									"",
+									"        let userInfo = {",
+									"            \"role_name\":jsData.data.business_info.current_role.role_name,",
+									"            \"is_owner\":jsData.data.business_info.current_role.is_owner,",
+									"            \"user_name\":jsData.data.business_info.list_business[0].user_name,",
+									"            \"business_id\":business_id",
+									"        }",
+									"",
+									"        // show log",
+									"        // console.log(\"userToken:\",userToken);",
+									"        // console.log(\"userRefreshToken:\",userRefreshToken);",
+									"        console.log(\"userInfo:\",JSON.stringify(userInfo));",
+									"",
+									"        pm.environment.set(\"C-userRefreshToken\",userRefreshToken);",
+									"        pm.environment.set(\"C-userInfo\",userInfo);",
+									"        pm.environment.set(\"C-business_id\",business_id);",
+									"",
+									"        let testcase = pm.environment.get(\"C-testcase\");",
+									"        testcase++;",
+									"        pm.environment.set(\"C-testcase\",testcase);",
+									"        postman.setNextRequest(\"get_list_default_uom\");",
+									"    }",
+									"} else {",
+									"    console.log(\"Can't get Token, end test\");",
+									"    postman.setNextRequest(null);",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json",
+								"type": "text",
+								"disabled": true
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{{C-payload}}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{sbh_base_url}}/finan-user/api/v1/auth/otp/confirm",
+							"host": [
+								"{{sbh_base_url}}"
+							],
+							"path": [
+								"finan-user",
+								"api",
+								"v1",
+								"auth",
+								"otp",
+								"confirm"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "uom",
+			"item": [
+				{
+					"name": "get_list_default_uom",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"let testcase = pm.environment.get(\"C-testcase\");",
+									"console.log(\"Testcase: \" + testcase);"
+								],
+								"type": "text/javascript"
+							}
+						},
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"if(pm.response.code == 200){",
+									"    let testcase = pm.environment.get(\"C-testcase\");",
+									"    const jsData = pm.response.json();",
+									"",
+									"    let list_uom = [];",
+									"    for(let item in jsData.data){",
+									"        if(jsData.data[item].name == \"kg\" || jsData.data[item].name == \"lit\"){",
+									"            list_uom[list_uom.length] = {",
+									"                \"uom_id\":jsData.data[item].id,",
+									"                \"name\":jsData.data[item].name,",
+									"                \"is_default\":jsData.data[item].is_default,",
+									"                \"has_child\":true,",
+									"                \"is_standard\":jsData.data[item].is_standard",
+									"            }",
+									"        } else {",
+									"            list_uom[list_uom.length] = {",
+									"                \"uom_id\":jsData.data[item].id,",
+									"                \"name\":jsData.data[item].name,",
+									"                \"is_default\":jsData.data[item].is_default,",
+									"                \"has_child\":false,",
+									"                \"is_standard\":jsData.data[item].is_standard",
+									"            }",
+									"        }",
+									"    }",
+									"",
+									"    console.log(\"debug: \" + JSON.stringify(list_uom));",
+									"",
+									"    testcase++;",
+									"    pm.environment.set(\"C-testcase\",testcase);",
+									"    pm.environment.set(\"C-list_uom\",list_uom);",
+									"",
+									"    postman.setNextRequest(\"view_list_ingredients\");",
+									"} else {",
+									"    console.log(\"Can't get list uom, end test\");",
+									"    postman.setNextRequest(null);",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{C-userToken}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{sbh_base_url}}/finan-product/api/v1/uom/get-list?business_id={{C-business_id}}&page=1&page_size=50&sort=&name=",
+							"host": [
+								"{{sbh_base_url}}"
+							],
+							"path": [
+								"finan-product",
+								"api",
+								"v1",
+								"uom",
+								"get-list"
+							],
+							"query": [
+								{
+									"key": "business_id",
+									"value": "{{C-business_id}}"
+								},
+								{
+									"key": "page",
+									"value": "1"
+								},
+								{
+									"key": "page_size",
+									"value": "50"
+								},
+								{
+									"key": "sort",
+									"value": ""
+								},
+								{
+									"key": "name",
+									"value": ""
+								}
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Product - Ingredient",
+			"item": [
+				{
+					"name": "view_list_ingredients",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"let testcase = pm.environment.get(\"C-testcase\");",
+									"console.log(\"Testcase: \" + testcase);"
+								],
+								"type": "text/javascript"
+							}
+						},
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"if(pm.response.code == 200){",
+									"    const jsData = JSON.parse(responseBody);",
+									"    let testcase = pm.environment.get(\"C-testcase\");",
+									"    let total_ingredients = null;",
+									"    try {",
+									"        total_ingredients = jsData.meta.total_rows;",
+									"    } catch {",
+									"        console.log(\"Missing meta\");",
+									"    }",
+									"    console.log(\"Total ingredients: \" + total_ingredients);",
+									"",
+									"    switch(testcase){",
+									"        case 3:",
+									"            pm.test(\"Got total_ingredients\", function () {",
+									"                pm.expect(total_ingredients != null).to.be.true;",
+									"            });",
+									"",
+									"            pm.environment.set(\"C-total_ingredients\",total_ingredients);",
+									"            break;",
+									"        case 6:",
+									"            let old_total_ingredients = pm.environment.get(\"C-total_ingredients\");",
+									"            // console.log(\"1st data: \" + JSON.stringify(jsData.data[0]));",
+									"",
+									"            pm.test(\"total_ingredients increase 1\", function () {",
+									"                pm.expect(old_total_ingredients + 1 == total_ingredients).to.be.true;",
+									"            });",
+									"",
+									"            let ingredientObj = pm.environment.get(\"C-ingredientObj\");",
+									"            console.log(\"Expected obj: \" + JSON.stringify(ingredientObj));",
+									"            let ingredient_id = pm.environment.get(\"C-ingredient_id\");",
+									"            let check_name = false, check_price = false, check_uom = false, check_total_quantity = false, check_total_inventory = false;",
+									"            for(let item in jsData.data){",
+									"                if(ingredient_id == jsData.data[item].id){",
+									"                    console.log(\"Actual data: \" + JSON.stringify(jsData.data[item]));",
+									"                    if(ingredientObj.name == jsData.data[item].name) check_name = true;",
+									"                    if(ingredientObj.price == jsData.data[item].price) check_price = true;",
+									"                    if(ingredientObj.total_quantity == jsData.data[item].total_quantity) check_total_quantity = true;",
+									"                    if(ingredientObj.uom_id == jsData.data[item].uom_id) check_uom = true;",
+									"                    if(ingredientObj.total_quantity * ingredientObj.price == jsData.data[item].total_inventory) check_total_inventory = true;",
+									"                    break;",
+									"                }",
+									"            }",
+									"",
+									"            // name",
+									"            pm.test(\"ingredient name is correctly!!!\", function () {",
+									"                pm.expect(check_name).to.be.true;",
+									"            });",
+									"",
+									"            // price",
+									"            pm.test(\"ingredient price is correctly!!!\", function () {",
+									"                pm.expect(check_price).to.be.true;",
+									"            });",
+									"",
+									"            // uom_id",
+									"            pm.test(\"ingredient uom_id is correctly!!!\", function () {",
+									"                pm.expect(check_uom).to.be.true;",
+									"            });",
+									"",
+									"            // total_quantity",
+									"            pm.test(\"ingredient total_quantity is correctly!!!\", function () {",
+									"                pm.expect(check_total_quantity).to.be.true;",
+									"            });",
+									"",
+									"            // total_inventory",
+									"            pm.test(\"ingredient total_inventory is correctly!!!\", function () {",
+									"                pm.expect(check_total_inventory).to.be.true;",
+									"            });",
+									"            break;",
+									"        default:",
+									"            break;",
+									"    }",
+									"",
+									"    testcase++;",
+									"    pm.environment.set(\"C-testcase\",testcase);",
+									"    postman.setNextRequest(\"view_ingredient_summary\"); // view_ingredient_summary",
+									"} else {",
+									"    console.log(\"Can't get list product in stock, end test\");",
+									"    postman.setNextRequest(null);",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{C-userToken}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{sbh_base_url}}/finan-product/api/v1/ingredient/get-list?business_id={{C-business_id}}&page=1&page_size=15&sort=&name=",
+							"host": [
+								"{{sbh_base_url}}"
+							],
+							"path": [
+								"finan-product",
+								"api",
+								"v1",
+								"ingredient",
+								"get-list"
+							],
+							"query": [
+								{
+									"key": "business_id",
+									"value": "{{C-business_id}}"
+								},
+								{
+									"key": "page",
+									"value": "1"
+								},
+								{
+									"key": "page_size",
+									"value": "15"
+								},
+								{
+									"key": "sort",
+									"value": ""
+								},
+								{
+									"key": "name",
+									"value": ""
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "view_ingredient_summary",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"let testcase = pm.environment.get(\"C-testcase\");",
+									"console.log(\"Testcase: \" + testcase);"
+								],
+								"type": "text/javascript"
+							}
+						},
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"if(pm.response.code == 200){",
+									"    const jsData = pm.response.json();",
+									"    let testcase = pm.environment.get(\"C-testcase\");",
+									"    let ingredient_summary = null;",
+									"    try {",
+									"        ingredient_summary = jsData.data;",
+									"    } catch {",
+									"        console.log(\"Missing resp data\");",
+									"    }",
+									"",
+									"    switch(testcase){",
+									"        case 4:",
+									"            pm.environment.set(\"C-ingredient_summary\",ingredient_summary);",
+									"",
+									"            pm.test(\"Got ingredient_summary\", function () {",
+									"                pm.expect(ingredient_summary != null).to.be.true;",
+									"            });",
+									"            console.log(\"resp ingredient_summary: \" + JSON.stringify(ingredient_summary));",
+									"",
+									"            testcase++;",
+									"            pm.environment.set(\"C-testcase\",testcase);",
+									"            postman.setNextRequest(\"create_new_ingredient\"); // create_new_ingredient",
+									"            break;",
+									"        case 7:",
+									"            let old_ingredient_summary = pm.environment.get(\"C-ingredient_summary\");",
+									"            // console.log(\"old data: \" + JSON.stringify(old_ingredient_summary));",
+									"            // console.log(\"new data: \" + JSON.stringify(ingredient_summary));",
+									"            let ingredientObj = pm.environment.get(\"C-ingredientObj\");",
+									"",
+									"            pm.test(\"total_quantity correctly!!!\", function () {",
+									"                console.log(\"Expected: \" + (old_ingredient_summary.total_quantity + ingredientObj.total_quantity));",
+									"                console.log(\"Actual: \" + ingredient_summary.total_quantity);",
+									"                pm.expect(ingredient_summary.total_quantity == (old_ingredient_summary.total_quantity + ingredientObj.total_quantity)).to.be.true;",
+									"            });",
+									"",
+									"            pm.test(\"total_amount correctly!!!\", function () {",
+									"                console.log(\"Expected: \" + (old_ingredient_summary.total_amount + ingredientObj.total_quantity*ingredientObj.price));",
+									"                console.log(\"Actual: \" + ingredient_summary.total_amount);",
+									"                pm.expect(ingredient_summary.total_amount == old_ingredient_summary.total_amount + ingredientObj.total_quantity*ingredientObj.price).to.be.true;",
+									"            });",
+									"",
+									"            console.log(\"--- End Testsuite 7 ---\");",
+									"            postman.setNextRequest(null);",
+									"            break;",
+									"        default:",
+									"            break;",
+									"    }",
+									"} else {",
+									"    console.log(\"Can't get ingredient summary, end test\");",
+									"    postman.setNextRequest(null);",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{C-userToken}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{sbh_base_url}}/finan-product/api/v1/ingredient/get-summary?business_id={{C-business_id}}",
+							"host": [
+								"{{sbh_base_url}}"
+							],
+							"path": [
+								"finan-product",
+								"api",
+								"v1",
+								"ingredient",
+								"get-summary"
+							],
+							"query": [
+								{
+									"key": "business_id",
+									"value": "{{C-business_id}}"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "create_new_ingredient",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"// random number between min and max",
+									"function getRandomInt(min, max) {",
+									"  \treturn Math.floor(Math.random() * (max - min + 1)) + min;",
+									"}",
+									"",
+									"//random characters",
+									"function randomChars(length) {",
+									"    var result           = '';",
+									"    var characters       = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';",
+									"    var charactersLength = characters.length;",
+									"    for ( var i = 0; i < length; i++ ) {",
+									"      result += characters.charAt(Math.floor(Math.random() * ",
+									" charactersLength));",
+									"   }",
+									"   return result;",
+									"}",
+									"",
+									"let testcase = pm.environment.get(\"C-testcase\");",
+									"",
+									"let ingredient_name, ingredient_price, total_quantity, uom_id;",
+									"",
+									"let case_ = pm.environment.get(\"C-case_\");",
+									"if(!case_){",
+									"    case_ = 1;",
+									"}",
+									"pm.environment.set(\"C-case_\",case_);",
+									"console.log(\"Testcase: \" + testcase + \".\" + case_);",
+									"",
+									"let list_uom = pm.environment.get(\"C-list_uom\");",
+									"",
+									"switch(case_){",
+									"    case 1:",
+									"        ingredient_name = \"\";",
+									"        ingredient_price = \"\";",
+									"        total_quantity = \"\";",
+									"        uom_id = \"\";",
+									"        break;",
+									"    case 2:",
+									"        ingredient_name = randomChars(31);",
+									"        ingredient_price = getRandomInt(20,50)*1000;",
+									"        total_quantity = getRandomInt(20,30);",
+									"        uom_id = list_uom[getRandomInt(0,list_uom.length - 1)].uom_id;",
+									"        break;",
+									"    case 3:",
+									"        ingredient_name = \"NVL \" + randomChars(10);",
+									"        ingredient_price = -1;",
+									"        total_quantity = getRandomInt(20,30);",
+									"        uom_id = list_uom[getRandomInt(0,list_uom.length - 1)].uom_id;",
+									"        break;",
+									"    case 4:",
+									"        ingredient_name = \"NVL \" + randomChars(10);",
+									"        ingredient_price = getRandomInt(20,50)*1000;",
+									"        total_quantity = getRandomInt(20,30);",
+									"        uom_id = list_uom[getRandomInt(0,list_uom.length - 1)].uom_id;",
+									"        break;",
+									"    default:",
+									"        console.log(\"làm gì có case này!!!!\");",
+									"        break;",
+									"}",
+									"",
+									"let payload = {",
+									"\t\"business_id\":pm.environment.get(\"C-business_id\"),",
+									"\t\"name\":ingredient_name,",
+									"\t\"price\":ingredient_price,",
+									"\t\"total_quantity\":total_quantity,",
+									"\t\"warning_quantity\": 0,",
+									"\t\"uom_id\":uom_id",
+									"}",
+									"",
+									"pm.environment.set(\"C-payload\",JSON.stringify(payload));",
+									"pm.environment.set(\"C-ingredientObj\",payload);"
+								],
+								"type": "text/javascript"
+							}
+						},
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"const jsData = pm.response.json();",
+									"let testcase = pm.environment.get(\"C-testcase\");",
+									"let case_ = pm.environment.get(\"C-case_\");",
+									"console.log(\"Debug resp: \" + JSON.stringify(jsData));",
+									"",
+									"switch(case_){",
+									"    case 1:",
+									"        pm.test(\"Status code is 400\", function () {",
+									"            pm.response.to.have.status(400);",
+									"        });",
+									"",
+									"        pm.test(\"Error message must be `invalid UUID length: 0`\", function () {",
+									"            pm.expect(jsData.error.detail == \"invalid UUID length: 0\").to.be.true;",
+									"        });",
+									"",
+									"        case_++;",
+									"        pm.environment.set(\"C-case_\",case_);",
+									"        postman.setNextRequest(\"create_new_ingredient\");",
+									"        break;",
+									"    case 2:",
+									"        pm.test(\"Status code is 400\", function () {",
+									"            pm.response.to.have.status(400);",
+									"        });",
+									"",
+									"        pm.test(\"Error message must have `vượt quá ký tự cho phép`\", function () {",
+									"            pm.expect(jsData.error.detail.includes(\"vượt quá ký tự cho phép\")).to.be.true;",
+									"        });",
+									"",
+									"        case_++;",
+									"        pm.environment.set(\"C-case_\",case_);",
+									"        postman.setNextRequest(\"create_new_ingredient\");",
+									"        break;",
+									"    case 3:",
+									"        pm.test(\"Status code is 400\", function () {",
+									"            pm.response.to.have.status(400);",
+									"        });",
+									"",
+									"        pm.test(\"Error message must be `Giá vốn không được có giá trị âm`\", function () {",
+									"            pm.expect(jsData.error.detail == \"Giá vốn không được có giá trị âm\").to.be.true;",
+									"        });",
+									"",
+									"        case_++;",
+									"        pm.environment.set(\"C-case_\",case_);",
+									"        postman.setNextRequest(\"create_new_ingredient\");",
+									"        break;",
+									"    case 4:",
+									"        pm.test(\"Status code is 200\", function () {",
+									"            pm.response.to.have.status(200);",
+									"        });",
+									"",
+									"        pm.environment.unset(\"C-case_\");",
+									"",
+									"        // check data",
+									"        let ingredient_id = null;",
+									"        try {",
+									"            ingredient_id = jsData.data.id;",
+									"        } catch {",
+									"            console.log(\"Missing id field\");",
+									"        }",
+									"        pm.environment.set(\"C-ingredient_id\",ingredient_id);",
+									"",
+									"        pm.test(\"Got ingredient_id: \" + ingredient_id, function () {",
+									"            pm.expect(ingredient_id != null).to.be.true;",
+									"        });",
+									"",
+									"        // name",
+									"        let ingredientObj = pm.environment.get(\"C-ingredientObj\");",
+									"        pm.test(\"ingredient name is correctly!!!\", function () {",
+									"            pm.expect(ingredientObj.name == jsData.data.name).to.be.true;",
+									"        });",
+									"",
+									"        // price",
+									"        pm.test(\"ingredient price is correctly!!!\", function () {",
+									"            pm.expect(ingredientObj.price == jsData.data.price).to.be.true;",
+									"        });",
+									"",
+									"        // uom_id",
+									"        pm.test(\"ingredient uom_id is correctly!!!\", function () {",
+									"            pm.expect(ingredientObj.uom_id == jsData.data.uom_id).to.be.true;",
+									"        });",
+									"",
+									"        // total_quantity",
+									"        pm.test(\"ingredient total_quantity is correctly!!!\", function () {",
+									"            pm.expect(ingredientObj.total_quantity == jsData.data.total_quantity).to.be.true;",
+									"        });",
+									"",
+									"        // // total_inventory",
+									"        // pm.test(\"ingredient total_inventory is correctly!!!\", function () {",
+									"        //     pm.expect(jsData.data.total_inventory == ingredientObj.total_quantity * ingredientObj.price).to.be.true;",
+									"        // });",
+									"",
+									"        testcase++;",
+									"        pm.environment.set(\"C-testcase\",testcase);",
+									"        postman.setNextRequest(\"view_list_ingredients\");",
+									"        break;",
+									"    default:",
+									"        console.log(\"Missing flow, end test\");",
+									"        postman.setNextRequest(null);",
+									"        break;",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{C-userToken}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{{C-payload}}"
+						},
+						"url": {
+							"raw": "{{sbh_base_url}}/finan-product/api/v1/ingredient/create",
+							"host": [
+								"{{sbh_base_url}}"
+							],
+							"path": [
+								"finan-product",
+								"api",
+								"v1",
+								"ingredient",
+								"create"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		}
+	]
+}

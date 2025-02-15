@@ -1,0 +1,2842 @@
+{
+	"info": {
+		"_postman_id": "b1526bec-2b57-4baa-bee1-ce127a8619c1",
+		"name": "sbh_8_update_ingredient",
+		"description": "1. Login\n2. Get data:\n    1. Get list ingredient => get an ingredient_id\n3. Update NV\n    1. Unhappy case: bỏ trống all fields.\n    2. Unhappy case: bỏ trống tên sp.\n    3. Unhappy case: bỏ trống đơn vị\n    4. Unhappy case: bỏ trống giá vốn.\n    5. Unhappy case: nhập tên sản phẩm hơn 30 kí tự.\n    6. Unhappy case: nhập giá vốn hơn 11 kí tự\n    7. Unhappy case: nhập chữ tại field \"Giá vốn\"\n    8. Unhappy case: nhập tồn kho hơn 7 kí tự\n    9. Unhappy case: nhập chữ tại field \"tồn kho\"\n    10. Unhappy case: nhập chữ tại field \"Cảnh báo tồn kho thấp\"\n4. Get data\n    1. Get list ingredient => get an other ingredient_id that use to update\n    2. Kho / Get list ingredient => find above ingredient (giống API của a. nên bỏ qua get data ở đây)\n    3. Kho / Get summary ingredient\n    4. Sổ Kho / Get list\n    5. Sổ Kho / Get summary\n5. Update NVL - nhập valid data để update thành công (stock)\n6. check data {{+ get new data}}\n    1. Get list ingredient => find & check new data\n    2. Kho / Get list ingredient => find & check new data\n    3. summary ingredient mới => data updated\n    4. Sổ Kho / Get list => check new data\n    5. Sổ Kho / Get summary => check new data\n7. Update NVL - nhập valid data để update thành công (history_cost)\n8. check data\n    1. Get list ingredient => find & check new data\n    2. Kho / Get list ingredient => find & check new data\n    3. summary ingredient mới => data updated\n    4. Sổ Kho / Get list => check new data\n    5. Sổ Kho / Get summary => check new data\n\nNote:\n\n- Task 1: 3 testcase đầu\n- Task 2: testcase 4\\~6\n- Task 3: testcase 7-8 (nếu case 6 có data mới => update lại => check dc case 8)",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"_exporter_id": "282640"
+	},
+	"item": [
+		{
+			"name": "Auth",
+			"item": [
+				{
+					"name": "verify_phone_number",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"/**",
+									" * currently, manual to create account pwd & use charles to get it",
+									" * default pwd created: 21112007 (prod with default account & no need pwd)",
+									" */",
+									"",
+									"let phone_number = pm.environment.get(\"SER-phone_number\");",
+									"console.log(\"--- Start Testsuite 8 ---\");",
+									"let testcase = 1;",
+									"",
+									"console.log(\"Testcase: \" + testcase);",
+									"console.log(\"login with phone_number: \" + phone_number);",
+									"",
+									"pm.environment.set(\"C-phone_number\",phone_number);",
+									"pm.environment.set(\"C-testcase\",testcase);"
+								],
+								"type": "text/javascript"
+							}
+						},
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"if(pm.response.code == 200){",
+									"    let jsData = pm.response.json();",
+									"",
+									"    if(jsData.data.is_existed && jsData.data.has_password){",
+									"        postman.setNextRequest(\"login_with_pwd\");",
+									"    } else if(jsData.data.is_existed) {",
+									"        console.log(\"This account doesn't create pwd, please manual create!!!\");",
+									"        postman.setNextRequest(null);",
+									"    } else {",
+									"        console.log(\"Error:\", JSON.stringify(jsData));",
+									"        console.log(\"THIS ACCOUNT IS NOT EXISTED IN SYSTEM, WILL MANUAL CREATE IT\");",
+									"        postman.setNextRequest(null);",
+									"    }",
+									"} else {",
+									"    console.log(\"Error, end test\");",
+									"    postman.setNextRequest(null);",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n\t\"phone_number\": \"{{C-phone_number}}\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{sbh_base_url}}/finan-user/api/v1/auth/account/verify",
+							"host": [
+								"{{sbh_base_url}}"
+							],
+							"path": [
+								"finan-user",
+								"api",
+								"v1",
+								"auth",
+								"account",
+								"verify"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "login_with_pwd",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"// let crypto = require('crypto-js');",
+									"",
+									"// const algorithm = \"aes-256-gcm\";",
+									"// const IV_LEN = 12;",
+									"// const AUTH_TAG_LEN = 16;",
+									"// const SECRET_KEY = \"7dQ0HwRI5okvwAK0WzxaW6ABFncjeu1E\";",
+									"",
+									"// function encrypt(message) {",
+									"//   const iv = Buffer.from(crypto.randomBytes(IV_LEN));",
+									"//   const cipher = crypto.createCipheriv(algorithm, SECRET_KEY, iv, {",
+									"//     authTagLength: AUTH_TAG_LEN,",
+									"//   });",
+									"//   const encryptedData = Buffer.concat([cipher.update(message), cipher.final()]);",
+									"//   const authTag = cipher.getAuthTag();",
+									"//   const raw = Buffer.concat([iv, encryptedData, authTag]).toString(\"hex\");",
+									"//   return raw;",
+									"// }",
+									"",
+									"// const pwd = \"21112007\";",
+									"// // var superSecretEncrypted = CryptoJS.AES.encrypt(pwd, SECRET_KEY);",
+									"",
+									"// let pwd_enc = encrypt(pwd);",
+									"// console.log(\"pwd_enc: \" + pwd_enc);"
+								],
+								"type": "text/javascript"
+							}
+						},
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"if(pm.response.code == 200){",
+									"    let jsData = pm.response.json();",
+									"    // debug",
+									"    // console.log(JSON.stringify(jsData));",
+									"",
+									"    let business_id = null;",
+									"    try{",
+									"        business_id = jsData.data.business_info.list_business[0].business_id;",
+									"    } catch{",
+									"        console.log(\"This is new user, must create business_id\");",
+									"    }",
+									"",
+									"    let userToken = jsData.data.token;",
+									"    pm.environment.set(\"H-userToken\",userToken);",
+									"",
+									"    if(business_id == null){",
+									"        console.log(\"This user don't have store, please check & use another account\");",
+									"        ",
+									"        postman.setNextRequest(null);",
+									"    } else {",
+									"        let userRefreshToken = jsData.data.refresh_token;",
+									"        let testCase = pm.environment.get(\"H-testCase\");",
+									"",
+									"        console.log(\"Debug: \"+ JSON.stringify(jsData.data.business_info))",
+									"        let userInfo = {",
+									"            \"role_name\":jsData.data.business_info.current_role.role_name,",
+									"            \"is_owner\":jsData.data.business_info.current_role.is_owner,",
+									"            \"user_name\":jsData.data.business_info.list_business[0].user_name,",
+									"            \"business_id\":business_id",
+									"        }",
+									"",
+									"        // show log",
+									"        console.log(\"userToken:\",userToken);",
+									"        console.log(\"userRefreshToken:\",userRefreshToken);",
+									"        console.log(\"userInfo:\",JSON.stringify(userInfo));",
+									"",
+									"        pm.environment.set(\"H-userRefreshToken\",userRefreshToken);",
+									"        pm.environment.set(\"H-userInfo\",userInfo);",
+									"        pm.environment.set(\"H-business_id\",business_id);",
+									"",
+									"        testCase++;",
+									"        pm.environment.set(\"H-testCase\",testCase);",
+									"        postman.setNextRequest(\"get_list_ingredient\");",
+									"    }",
+									"} else {",
+									"    console.log(\"Can't get Token, end test\");",
+									"",
+									"    // debug",
+									"    let jsData = pm.response.json();",
+									"    console.log(\"data:\",JSON.stringify(jsData));",
+									"",
+									"    postman.setNextRequest(null);",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n\t\"phone_number\": \"{{C-phone_number}}\",\n\t\"pwd\": \"{{pwd}}\",\n\t\"platform\": \"gtapp\",\n\t\"device_id\": \"C9102FC6-466C-4980-B795-A91A2FD7F97F\",\n\t\"app_version\": \"{{x-current-version}}\",\n\t\"device_name\": \"iPhone\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{sbh_base_url}}/finan-user/api/v1/auth/account/login",
+							"host": [
+								"{{sbh_base_url}}"
+							],
+							"path": [
+								"finan-user",
+								"api",
+								"v1",
+								"auth",
+								"account",
+								"login"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "update NVL unsuccessfully",
+			"item": [
+				{
+					"name": "get_list_ingredient",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {\r",
+									"    pm.response.to.have.status(200);\r",
+									"});\r",
+									"//random number between min and max\r",
+									"function getRandomInt(min, max) {\r",
+									"  \treturn Math.floor(Math.random() * (max - min + 1)) + min;\r",
+									"}\r",
+									"if(pm.response.code == 200){\r",
+									"    let jsData = JSON.parse(responseBody);\r",
+									"    let testCase = pm.environment.get(\"H-testCase\");\r",
+									"  \r",
+									"    if (jsData.meta.total_rows > 0){\r",
+									"        let item;\r",
+									"        if(jsData.meta.total_rows - 1 < 30){\r",
+									"            item = getRandomInt(0,jsData.meta.total_rows - 1);\r",
+									"        } else {\r",
+									"            item = getRandomInt(0,29);\r",
+									"        }\r",
+									"        console.log(\"item: \" + item);\r",
+									"        let ingredientInfo = {\r",
+									"            \"ingre_id\":jsData.data[item].id,\r",
+									"            \"name\":jsData.data[item].name,\r",
+									"            \"business_id\":jsData.data[item].business_id,\r",
+									"            \"price\":jsData.data[item].price,               \r",
+									"            \"total_quantity\":jsData.data[item].total_quantity,\r",
+									"            \"warning_quantity\":jsData.data[item].warning_quantity,\r",
+									"            \"total_inventory\":jsData.data[item].total_inventory,\r",
+									"            \"uom_id\":jsData.data[item].uom.id\r",
+									"            //\"sub_uom_name\":jsData.data[item].uom.sub_uom.name\r",
+									"        }\r",
+									"        console.log(\"ingredientInfo: \"+ JSON.stringify(ingredientInfo));\r",
+									"        pm.environment.set(\"H-ingredientInfo\",ingredientInfo);\r",
+									"        pm.environment.set(\"H-ingreId\",ingredientInfo.ingre_id );\r",
+									"\r",
+									"        testCase++;\r",
+									"        pm.environment.set(\"H-testCase\",testCase);\r",
+									"        postman.setNextRequest(\"update_ingredient_unsuccessfully\");\r",
+									"    } else {\r",
+									"        console.log(\"Chưa có nguyên vật liệu trong danh sách\");\r",
+									"        postman.setNextRequest(null);\r",
+									"    }\r",
+									"         \r",
+									"} else {\r",
+									"    console.log(\"Can't get list product in stock, end test\");\r",
+									"    postman.setNextRequest(null);\r",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						},
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"let testCase = pm.environment.get(\"H-testCase\");\r",
+									"console.log(\"testCase: \"+ testCase);"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{H-userToken}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{sbh_base_url}}/finan-product/api/v1/ingredient/get-list?business_id={{H-business_id}}&page=1&page_size=30",
+							"host": [
+								"{{sbh_base_url}}"
+							],
+							"path": [
+								"finan-product",
+								"api",
+								"v1",
+								"ingredient",
+								"get-list"
+							],
+							"query": [
+								{
+									"key": "business_id",
+									"value": "{{H-business_id}}"
+								},
+								{
+									"key": "page",
+									"value": "1"
+								},
+								{
+									"key": "page_size",
+									"value": "30"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "update_ingredient_unsuccessfully",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"//random characters\r",
+									"function randomChars(length) {\r",
+									"    var result           = '';\r",
+									"    var characters       = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';\r",
+									"    var charactersLength = characters.length;\r",
+									"    for ( var i = 0; i < length; i++ ) {\r",
+									"      result += characters.charAt(Math.floor(Math.random() * \r",
+									" charactersLength));\r",
+									"   }\r",
+									"   return result;\r",
+									"}\r",
+									"//random number between min and max\r",
+									"function getRandomInt(min, max) {\r",
+									"  \treturn Math.floor(Math.random() * (max - min + 1)) + min;\r",
+									"}\r",
+									"\r",
+									"let testCase = pm.environment.get(\"H-testCase\");\r",
+									"let case_ = pm.environment.get(\"H-case_\");\r",
+									"if(!case_){\r",
+									"    case_ = 1;\r",
+									"    pm.environment.set(\"H-case_\",case_);\r",
+									"    console.log(\"--- START TEST ---\");\r",
+									"}\r",
+									"console.log(\"testCase: \" + testCase + \".\" + case_);\r",
+									"let payload = null;\r",
+									"let ingredientInfo = pm.environment.get(\"H-ingredientInfo\");\r",
+									"switch (case_) {\r",
+									"       case 1:\r",
+									"           // bỏ trống all fields.\r",
+									"           console.log(\"bỏ trống all fields!\");\r",
+									"           payload = {\r",
+									"\t        \"business_id\": ingredientInfo.business_id,\r",
+									"\t        \"name\": \"\",\r",
+									"\t        \"price\": \"\",\r",
+									"\t        \"total_quantity\": \"\",\r",
+									"\t        \"warning_quantity\": \"\",\r",
+									"\t        \"uom_id\": ingredientInfo.uom_id\r",
+									"            }\r",
+									"            console.log(\"H-payload\",payload);\r",
+									"           break;\r",
+									"        case 2:\r",
+									"           // bỏ trống tên sp.\r",
+									"           console.log(\"bỏ trống tên sp!\")\r",
+									"           payload = {\r",
+									"\t        \"business_id\": ingredientInfo.business_id,\r",
+									"\t        \"name\": \"\",\r",
+									"\t        \"price\": getRandomInt(1,10)*1000,\r",
+									"\t        \"total_quantity\": getRandomInt(11,15),\r",
+									"\t        \"warning_quantity\": getRandomInt(1,10),\r",
+									"\t        \"uom_id\": ingredientInfo.uom_id\r",
+									"            }\r",
+									"           console.log(\"H-payload\",payload);\r",
+									"           break;\r",
+									"        case 3:\r",
+									"           // bỏ trống đơn vị.\r",
+									"           console.log(\"bỏ trống đơn vị!\")\r",
+									"           payload = {\r",
+									"\t        \"business_id\": ingredientInfo.business_id,\r",
+									"\t        \"name\": \"auto \" + randomChars(5) ,\r",
+									"\t        \"price\": getRandomInt(10,100)*1000,\r",
+									"\t        \"total_quantity\": getRandomInt(11,99),\r",
+									"\t        \"warning_quantity\": getRandomInt(1,10),\r",
+									"\t        \"uom_id\": \"\"\r",
+									"            }\r",
+									"            console.log(\"H-payload\",payload);\r",
+									"           break;\r",
+									"        case 4:\r",
+									"            //bỏ trống giá vốn\r",
+									"            console.log(\"bỏ trống giá vốn!\")\r",
+									"           payload = {\r",
+									"\t        \"business_id\": ingredientInfo.business_id,\r",
+									"\t        \"name\": \"auto \" + randomChars(5) ,\r",
+									"\t        \"price\": \"\",\r",
+									"\t        \"total_quantity\": getRandomInt(11,99),\r",
+									"\t        \"warning_quantity\": getRandomInt(1,10),\r",
+									"\t        \"uom_id\": ingredientInfo.uom_id\r",
+									"            }\r",
+									"            console.log(\"H-payload\",payload);\r",
+									"            break;\r",
+									"        case 5:\r",
+									"            //nhập tên sản phẩm hơn 30 kí tự - 31 kí tự\r",
+									"            console.log(\"nhập tên sản phẩm hơn 30 kí tự - 31 kí tự!\")\r",
+									"           payload = {\r",
+									"\t        \"business_id\": ingredientInfo.business_id,\r",
+									"\t        \"name\": \"auto \" + randomChars(26) ,\r",
+									"\t        \"price\": getRandomInt(10,100)*1000,\r",
+									"\t        \"total_quantity\": getRandomInt(11,99),\r",
+									"\t        \"warning_quantity\": getRandomInt(1,10),\r",
+									"\t        \"uom_id\": ingredientInfo.uom_id\r",
+									"            }\r",
+									"            console.log(\"H-payload\",payload);\r",
+									"            break;\r",
+									"        case 6:\r",
+									"             \r",
+									"            //nhập giá vốn hơn 11 kí tự\r",
+									"            console.log(\"nhập giá vốn hơn 11 kí tự!\")\r",
+									"           payload = {\r",
+									"\t        \"business_id\": ingredientInfo.business_id,\r",
+									"\t        \"name\": ingredientInfo.name ,\r",
+									"\t        \"price\": getRandomInt(111111111,999999999)*1000,\r",
+									"\t        \"total_quantity\": getRandomInt(11,15),\r",
+									"\t        \"warning_quantity\": getRandomInt(1,10),\r",
+									"\t        \"uom_id\": ingredientInfo.uom_id\r",
+									"            }\r",
+									"            console.log(\"H-payload\",payload);\r",
+									"            break;\r",
+									"        case 7:   \r",
+									"            // nhập chữ tại field \"Giá vốn\"\r",
+									"            console.log(\" nhập chữ tại field Giá vốn!\")\r",
+									"            payload = {\r",
+									"\t        \"business_id\": ingredientInfo.business_id,\r",
+									"\t        \"name\": \"auto \" + randomChars(5) ,\r",
+									"\t        \"price\": randomChars(6),\r",
+									"\t        \"total_quantity\": getRandomInt(11,99),\r",
+									"\t        \"warning_quantity\": getRandomInt(1,10),\r",
+									"\t        \"uom_id\": ingredientInfo.uom_id\r",
+									"            }\r",
+									"            console.log(\"H-payload\",payload);\r",
+									"            break;\r",
+									"        case 8:\r",
+									"            // nhập tồn kho hơn 7 kí tự\r",
+									"            console.log(\"nhập tồn kho hơn 7 kí tự!\")\r",
+									"            payload = {\r",
+									"\t        \"business_id\": ingredientInfo.business_id,\r",
+									"\t        \"name\": ingredientInfo.name,\r",
+									"\t        \"price\":getRandomInt(10,100)*1000,\r",
+									"\t        \"total_quantity\": getRandomInt(10000000,99999999),\r",
+									"\t        \"warning_quantity\": getRandomInt(1,10),\r",
+									"\t        \"uom_id\": ingredientInfo.uom_id\r",
+									"            }\r",
+									"            console.log(\"H-payload\",payload);\r",
+									"            break;\r",
+									"        case 9:\r",
+									"            // nhập chữ tại field \"tồn kho\"\r",
+									"            console.log(\"nhập chữ tại field tồn kho!\")\r",
+									"            payload = {\r",
+									"\t        \"business_id\": ingredientInfo.business_id,\r",
+									"\t        \"name\": \"auto \" + randomChars(5) ,\r",
+									"\t        \"price\":getRandomInt(10,100)*1000,\r",
+									"\t        \"total_quantity\": randomChars(5),\r",
+									"\t        \"warning_quantity\": getRandomInt(1,10),\r",
+									"\t        \"uom_id\": ingredientInfo.uom_id\r",
+									"            }\r",
+									"            console.log(\"H-payload\",payload);\r",
+									"            break;\r",
+									"        case 10:\r",
+									"            // nhập chữ tại field \"Cảnh báo tồn kho thấp\"\r",
+									"            console.log(\"nhập chữ tại field Cảnh báo tồn kho thấp!\")\r",
+									"            payload = {\r",
+									"\t        \"business_id\": ingredientInfo.business_id,\r",
+									"\t        \"name\": \"auto \" + randomChars(5) ,\r",
+									"\t        \"price\":getRandomInt(10,100)*1000,\r",
+									"\t        \"total_quantity\":getRandomInt(1,10),\r",
+									"\t        \"warning_quantity\": randomChars(5),\r",
+									"\t        \"uom_id\": ingredientInfo.uom_id\r",
+									"            }\r",
+									"            console.log(\"H-payload\",payload);\r",
+									"            break;\r",
+									"        \r",
+									"        default:      \r",
+									"                              \r",
+									"        break;\r",
+									"\r",
+									"        \r",
+									"}\r",
+									"\r",
+									"pm.environment.set(\"H-payload\",JSON.stringify(payload));"
+								],
+								"type": "text/javascript"
+							}
+						},
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"let testCase = pm.environment.get (\"H-testCase\");\r",
+									"let case_ = pm.environment.get (\"H-case_\");\r",
+									"let jsData = pm.response.json();\r",
+									"if (pm.response.code==400){\r",
+									"    switch (case_) {\r",
+									"        case 1: case 2: case 3: case 4: case 5: case 6: case 7: case 8: case 9: case 10:\r",
+									"            pm.test(\"Status code is 400\", function () {\r",
+									"                pm.response.to.have.status(400);\r",
+									"            });\r",
+									"            console.log (\"error: \"+ jsData.error.detail);   \r",
+									"            break;\r",
+									"        default:    \r",
+									"            break;  \r",
+									"    }\r",
+									"\r",
+									"    if (case_>=10){\r",
+									"        pm.environment.unset(\"H-case_\");\r",
+									"        testCase++;\r",
+									"        pm.environment.set(\"H-testCase\",testCase);\r",
+									"        postman.setNextRequest(\"get_ingredient _update\"); \r",
+									"    } else {\r",
+									"        case_++;\r",
+									"        pm.environment.set(\"H-case_\",case_);\r",
+									"        console.log(\"Check next case\");\r",
+									"        postman.setNextRequest(\"update_ingredient_unsuccessfully\");\r",
+									"    }\r",
+									"}else {\r",
+									"    console.log(\"End test \"+ jsData);\r",
+									"    postman.setNextRequest(null);\r",
+									"}\r",
+									""
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{H-userToken}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{{H-payload}}"
+						},
+						"url": {
+							"raw": "{{sbh_base_url}}/finan-product/api/v1/ingredient/update/{{H-ingreId}}",
+							"host": [
+								"{{sbh_base_url}}"
+							],
+							"path": [
+								"finan-product",
+								"api",
+								"v1",
+								"ingredient",
+								"update",
+								"{{H-ingreId}}"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "update stock NVL successfully",
+			"item": [
+				{
+					"name": "get_ingredient _update",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {\r",
+									"    pm.response.to.have.status(200);\r",
+									"});\r",
+									"//random number between min and max\r",
+									"function getRandomInt(min, max) {\r",
+									"  \treturn Math.floor(Math.random() * (max - min + 1)) + min;\r",
+									"}\r",
+									"if(pm.response.code == 200){\r",
+									"    let jsData = JSON.parse(responseBody);\r",
+									"  \r",
+									"    if (jsData.meta.total_rows > 0){\r",
+									"            let item;\r",
+									"            if(jsData.meta.total_rows - 1 < 30){\r",
+									"                item = getRandomInt(0,jsData.meta.total_rows - 1);\r",
+									"            } else {\r",
+									"                item = getRandomInt(0,29);\r",
+									"            }\r",
+									"            console.log(\"item: \" + item);\r",
+									"            let ingredientInfo = {\r",
+									"                \"ingre_id\":jsData.data[item].id,\r",
+									"                \"name\":jsData.data[item].name,\r",
+									"                \"business_id\":jsData.data[item].business_id,\r",
+									"                \"price\":jsData.data[item].price,               \r",
+									"                \"total_quantity\":jsData.data[item].total_quantity,\r",
+									"                \"warning_quantity\":jsData.data[item].warning_quantity,\r",
+									"                \"total_inventory\":jsData.data[item].total_inventory,\r",
+									"                \"uom_id\":jsData.data[item].uom.id\r",
+									"                //\"sub_uom_name\":jsData.data[item].uom.sub_uom.name\r",
+									"            }\r",
+									"            console.log(\"ingredientInfo: \"+ JSON.stringify(ingredientInfo));\r",
+									"            pm.environment.set(\"H-ingredientInfo\",ingredientInfo);\r",
+									"            pm.environment.set(\"H-ingreId\",ingredientInfo.ingre_id );\r",
+									"            postman.setNextRequest(\"Get_summary_ingredient_in_stock\");\r",
+									"    } else {\r",
+									"            console.log(\"Chưa có nguyên vật liệu trong danh sách\");\r",
+									"            postman.setNextRequest(null);\r",
+									"    }\r",
+									"         \r",
+									"} else {\r",
+									"    console.log(\"Can't get list product in stock, end test\");\r",
+									"    postman.setNextRequest(null);\r",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						},
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"let testCase = pm.environment.get(\"H-testCase\");\r",
+									"console.log(\"testCase: \" + testCase);\r",
+									"\r",
+									""
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{H-userToken}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{sbh_base_url}}/finan-product/api/v1/ingredient/get-list?business_id={{H-business_id}}&page=1&page_size=30",
+							"host": [
+								"{{sbh_base_url}}"
+							],
+							"path": [
+								"finan-product",
+								"api",
+								"v1",
+								"ingredient",
+								"get-list"
+							],
+							"query": [
+								{
+									"key": "business_id",
+									"value": "{{H-business_id}}"
+								},
+								{
+									"key": "page",
+									"value": "1"
+								},
+								{
+									"key": "page_size",
+									"value": "30"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get_summary_ingredient_in_stock",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {\r",
+									"    pm.response.to.have.status(200);\r",
+									"});\r",
+									"\r",
+									"if (pm.response.code == 200){\r",
+									"let jsData = pm.response.json();\r",
+									"pm.environment.set(\"H-old_total_amount\",jsData.data.total_amount);\r",
+									"pm.environment.set(\"H-old_total_quantity\",jsData.data.total_quantity);\r",
+									"postman.setNextRequest(\"get_list_sokho\");\r",
+									"} else{\r",
+									"    console.log(\"Can't get summary_ingredient, end test\");\r",
+									"    postman.setNextRequest(null);\r",
+									"}\r",
+									""
+								],
+								"type": "text/javascript"
+							}
+						},
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"let testCase = pm.environment.get(\"H-testCase\");",
+									"console.log(\"testCase: \" + testCase);"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{H-userToken}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{sbh_base_url}}/finan-product/api/v1/ingredient/get-summary?business_id={{H-business_id}}",
+							"host": [
+								"{{sbh_base_url}}"
+							],
+							"path": [
+								"finan-product",
+								"api",
+								"v1",
+								"ingredient",
+								"get-summary"
+							],
+							"query": [
+								{
+									"key": "business_id",
+									"value": "{{H-business_id}}"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "get_list_sokho",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"let testCase = pm.environment.get(\"H-testCase\");\r",
+									"console.log(\"testCase: \" + testCase);\r",
+									"\r",
+									"/*let page = pm.environment.get(\"H-page\");\r",
+									"\r",
+									"if(!page){\r",
+									"    page = 1;\r",
+									"    pm.environment.set(\"H-page\",page);\r",
+									"\r",
+									"    let page_size = 50;\r",
+									"    pm.environment.set(\"H-page_size\",page_size);\r",
+									"}*/\r",
+									"\r",
+									"// lấy full tháng hiện tại\r",
+									"let today = new Date();\r",
+									"// let firstDay = new Date(today.getFullYear(), today.getMonth(), 1);\r",
+									"// let lastDay = new Date(today.getFullYear(), today.getMonth() + 1, 1);\r",
+									"\r",
+									"// lấy full tháng trước\r",
+									"// let firstDay = new Date(today.getFullYear(), today.getMonth() - 1, 1);\r",
+									"// let lastDay = new Date(today.getFullYear(), today.getMonth(), 1);\r",
+									"\r",
+									"// lấy full ngày hiện tại\r",
+									"let firstDay = new Date(today.getFullYear(), today.getMonth(), today.getDate(), 0, 0 ,0, 0);\r",
+									"let lastDay = new Date(today.getFullYear(), today.getMonth(), today.getDate(), 23, 59 ,59, 0);\r",
+									"// \r",
+									"// let timestamp = Math.floor(firstDay.getTime()/1000) - 3*24*60*60;\r",
+									"// let last3Day = new Date(timestamp*1000);\r",
+									"// console.log(\"last3Day: \" + last3Day);\r",
+									"\r",
+									"let start_time= firstDay.toISOString();\r",
+									"let end_time= lastDay.toISOString();\r",
+									"\r",
+									"console.log(\"start_time: \" + start_time);\r",
+									"console.log(\"end_time: \" + end_time);\r",
+									"\r",
+									"pm.environment.set(\"H-start_time\",start_time);\r",
+									"pm.environment.set(\"H-end_time\",end_time);"
+								],
+								"type": "text/javascript"
+							}
+						},
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"let jsData = pm.response.json();\r",
+									"\r",
+									"pm.test(\"Status code is 200\", function () {\r",
+									"    pm.response.to.have.status(200);\r",
+									"});\r",
+									"if (pm.response.code == 200){\r",
+									"    pm.environment.set(\"H-old_total_rows\",jsData.meta.total_rows);\r",
+									" \r",
+									"     postman.setNextRequest(\"get_summary_sokho\");\r",
+									"}else{\r",
+									"    console.log(\"Error:\", JSON.stringify(jsData));\r",
+									"    console.log(\"Không get được list sổ kho, End test...\")\r",
+									"    postman.setNextRequest(null);\r",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{H-userToken}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{sbh_base_url}}/ms-warehouse-management/api/v1/po-detail/get-list?business_id={{H-business_id}}&end_time={{H-end_time}}&page=1&page_size=50&search=&sort=created_at desc&start_time={{H-start_time}}",
+							"host": [
+								"{{sbh_base_url}}"
+							],
+							"path": [
+								"ms-warehouse-management",
+								"api",
+								"v1",
+								"po-detail",
+								"get-list"
+							],
+							"query": [
+								{
+									"key": "business_id",
+									"value": "{{H-business_id}}"
+								},
+								{
+									"key": "end_time",
+									"value": "{{H-end_time}}"
+								},
+								{
+									"key": "page",
+									"value": "1"
+								},
+								{
+									"key": "page_size",
+									"value": "50"
+								},
+								{
+									"key": "search",
+									"value": ""
+								},
+								{
+									"key": "sort",
+									"value": "created_at desc"
+								},
+								{
+									"key": "start_time",
+									"value": "{{H-start_time}}"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "get_summary_sokho",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"let jsData = pm.response.json();\r",
+									"\r",
+									"pm.test(\"Status code is 200\", function () {\r",
+									"    pm.response.to.have.status(200);\r",
+									"});\r",
+									"\r",
+									"if (pm.response.code == 200){\r",
+									"    let testCase = pm.environment.get(\"H-testCase\");\r",
+									"    pm.environment.set(\"H-0_first_period\",jsData.data.first_period);\r",
+									"    pm.environment.set(\"H-0_inbound_in_period\",jsData.data.inbound_in_period);\r",
+									"    pm.environment.set(\"H-0_outbound_in_period\",jsData.data.outbound_in_period);\r",
+									"    pm.environment.set(\"H-0_last_period\",jsData.data.last_period);\r",
+									"    console.log(\"Tồn đầu kì: \" + jsData.data.first_period + \" Tồn cuối kì: \" + jsData.data.last_period)\r",
+									"\r",
+									"    testCase++;\r",
+									"    pm.environment.set(\"H-testCase\",testCase);\r",
+									"     postman.setNextRequest(\"update_ingredient_successfully\");\r",
+									"}else{\r",
+									"    console.log(\"Error:\", JSON.stringify(jsData));\r",
+									"    console.log(\"không lấy được thông tin tồn đầu kì/cuối kì, End test...\")\r",
+									"    postman.setNextRequest(null);\r",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						},
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"let testCase = pm.environment.get(\"H-testCase\");",
+									"console.log(\"testCase: \" + testCase);"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{H-userToken}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{sbh_base_url}}/ms-warehouse-management/api/v1/po/get-period-value?business_id={{H-business_id}}&end_time={{H-end_time}}&name=&start_time={{H-start_time}}",
+							"host": [
+								"{{sbh_base_url}}"
+							],
+							"path": [
+								"ms-warehouse-management",
+								"api",
+								"v1",
+								"po",
+								"get-period-value"
+							],
+							"query": [
+								{
+									"key": "business_id",
+									"value": "{{H-business_id}}"
+								},
+								{
+									"key": "end_time",
+									"value": "{{H-end_time}}"
+								},
+								{
+									"key": "name",
+									"value": ""
+								},
+								{
+									"key": "start_time",
+									"value": "{{H-start_time}}"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "update_ingredient_successfully",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"//random characters\r",
+									"function randomChars(length) {\r",
+									"    var result           = '';\r",
+									"    var characters       = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';\r",
+									"    var charactersLength = characters.length;\r",
+									"    for ( var i = 0; i < length; i++ ) {\r",
+									"      result += characters.charAt(Math.floor(Math.random() * \r",
+									" charactersLength));\r",
+									"   }\r",
+									"   return result;\r",
+									"}\r",
+									"//random number between min and max\r",
+									"function getRandomInt(min, max) {\r",
+									"  \treturn Math.floor(Math.random() * (max - min + 1)) + min;\r",
+									"}\r",
+									"\r",
+									"let testCase = pm.environment.get(\"H-testCase\");\r",
+									"console.log(\"testCase: \" + testCase);\r",
+									"\r",
+									"let payload = null;\r",
+									"let rand_total_quan = getRandomInt(10,15);\r",
+									"pm.environment.set(\"H-rand_total_quan\",rand_total_quan);\r",
+									"console.log(\"rand_total_quan: \" + rand_total_quan);\r",
+									"let ingredientInfo = pm.environment.get(\"H-ingredientInfo\");\r",
+									" // Update số lượng tồn kho NVL thành công\r",
+									"    console.log(\"Update số lượng tồn kho NVL hợp lệ !!!\")\r",
+									"            payload = {\r",
+									"\t        \"business_id\": ingredientInfo.business_id,\r",
+									"\t        \"name\": ingredientInfo.name ,\r",
+									"\t        \"price\":ingredientInfo.price,\r",
+									"\t        \"total_quantity\": rand_total_quan,\r",
+									"\t        \"warning_quantity\": ingredientInfo.warning_quantity,\r",
+									"\t        \"uom_id\": ingredientInfo.uom_id\r",
+									"            }\r",
+									"           \r",
+									"            console.log(\"H-payload\",payload);\r",
+									"\r",
+									"pm.environment.set(\"H-payload\",JSON.stringify(payload));"
+								],
+								"type": "text/javascript"
+							}
+						},
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"let jsData = JSON.parse(responseBody);\r",
+									"if (pm.response.code == 200){\r",
+									"    let testCase = pm.environment.get(\"H-testCase\");\r",
+									"    let payload = JSON.parse(pm.environment.get(\"H-payload\"));\r",
+									"    let ingredientInfo_1 = {\r",
+									"        \"ingre_id\":jsData.data.id,\r",
+									"        \"name\":jsData.data.name,\r",
+									"        \"business_id\":jsData.data.business_id,\r",
+									"        \"price\":jsData.data.price,               \r",
+									"        \"total_quantity\":jsData.data.total_quantity,\r",
+									"        \"warning_quantity\":jsData.data.warning_quantity,\r",
+									"        \"total_inventory\":jsData.data.total_inventory,\r",
+									"        \"uom_id\":jsData.data.uom_id\r",
+									"        \r",
+									"    }\r",
+									"\r",
+									"    console.log(\"ingredientInfo_1: \"+ JSON.stringify(ingredientInfo_1));\r",
+									"    pm.environment.set(\"H-ingredientInfo_1\",ingredientInfo_1);\r",
+									"    pm.environment.set(\"H-ingreId\",ingredientInfo_1.ingre_id );\r",
+									"    pm.test(\"Tên NVL sau khi update đúng với input!!!\", function () {\r",
+									"        console.log(\"Input Tên NVL update: \"+ payload.name);        \r",
+									"        console.log(\"Tên NVL sau khi update: \" + ingredientInfo_1.name);\r",
+									"        pm.expect(payload.name == ingredientInfo_1.name).to.be.true;\r",
+									"        });\r",
+									"    pm.test(\"Giá vốn NVL sau khi update đúng với input!!!\", function () {\r",
+									"        console.log(\"Input Giá vốn NVL update: \"+ payload.price);        \r",
+									"        console.log(\"Giá vốn NVL sau khi update: \" + ingredientInfo_1.price);\r",
+									"        pm.expect(payload.price == ingredientInfo_1.price).to.be.true;\r",
+									"        });\r",
+									"    pm.test(\"Số lượng tồn kho NVL sau khi update đúng với input!!!\", function () {\r",
+									"        console.log(\"Input Số lượng tồn kho NVL update: \"+ payload.total_quantity);        \r",
+									"        console.log(\"Số lượng tồn kho NVL sau khi update: \" + ingredientInfo_1.total_quantity);\r",
+									"        pm.expect(payload.total_quantity == ingredientInfo_1.total_quantity).to.be.true;\r",
+									"        });\r",
+									"    pm.test(\"Cảnh báo tồn kho thấp NVL sau khi update đúng với input!!!\", function () {\r",
+									"        console.log(\"Input Cảnh báo tồn kho thấp NVL update: \"+ payload.warning_quantity);        \r",
+									"        console.log(\"Cảnh báo tồn kho thấp NVL sau khi update: \" + ingredientInfo_1.warning_quantity);\r",
+									"        pm.expect(payload.warning_quantity == ingredientInfo_1.warning_quantity).to.be.true;\r",
+									"        });\r",
+									"    pm.test(\"đơn vị NVL sau khi update đúng với input!!!\", function () {\r",
+									"        console.log(\"Input đơn vị NVL update: \"+ payload.uom_id);        \r",
+									"        console.log(\"đơn vị NVL sau khi update: \" + ingredientInfo_1.uom_id);\r",
+									"        pm.expect(payload.uom_id == ingredientInfo_1.uom_id).to.be.true;\r",
+									"        });\r",
+									"    testCase++;\r",
+									"    pm.environment.set(\"H-testCase\",testCase);\r",
+									"    postman.setNextRequest(\"CheckData_in_list_kho\");\r",
+									"} else {\r",
+									"    console.log(\"Update tồn kho nguyên vật liệu không thành công !\");\r",
+									"    postman.setNextRequest(null);\r",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{H-userToken}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{{H-payload}}"
+						},
+						"url": {
+							"raw": "{{sbh_base_url}}/finan-product/api/v1/ingredient/update/{{H-ingreId}}",
+							"host": [
+								"{{sbh_base_url}}"
+							],
+							"path": [
+								"finan-product",
+								"api",
+								"v1",
+								"ingredient",
+								"update",
+								"{{H-ingreId}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "CheckData_in_list_kho",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {\r",
+									"    pm.response.to.have.status(200);\r",
+									"});\r",
+									"let ingredientInfo_1 = pm.environment.get(\"H-ingredientInfo_1\");\r",
+									"let ingredientInfo = pm.environment.get(\"H-ingredientInfo\");\r",
+									"if(pm.response.code == 200){\r",
+									"    let jsData = JSON.parse(responseBody);\r",
+									"  for(let item in jsData.data){\r",
+									"      // get data của ingredient đã update trong list ingredient kho\r",
+									"        if(jsData.data[item].id==ingredientInfo_1.ingre_id){\r",
+									"           let data_ingredient_update = {\r",
+									"               \"ingre_id\":jsData.data[item].id,\r",
+									"                \"name\":jsData.data[item].name,\r",
+									"                \"business_id\":jsData.data[item].business_id,\r",
+									"                \"price\":jsData.data[item].price,               \r",
+									"                \"total_quantity\":jsData.data[item].total_quantity,\r",
+									"                \"warning_quantity\":jsData.data[item].warning_quantity,\r",
+									"                \"total_inventory\":jsData.data[item].total_inventory,\r",
+									"                \"uom_id\":jsData.data[item].uom.id \r",
+									"            }\r",
+									"            console.log(\"data_ingredient_update: \"+ JSON.stringify(data_ingredient_update));\r",
+									"\r",
+									"            pm.test(\"Update tồn kho NVL thành công!!!\", function () {\r",
+									"            console.log(\"Số lượng ingredient cũ là \"+ ingredientInfo.total_quantity);        \r",
+									"            console.log(\"Số lượng ingredient mới là: \" + ingredientInfo_1.total_quantity);\r",
+									"            pm.expect(data_ingredient_update.total_quantity == ingredientInfo_1.total_quantity).to.be.true;\r",
+									"             });\r",
+									"\r",
+									"            postman.setNextRequest(\"Check_summary_ingredient_in_stock\");     \r",
+									"\r",
+									"        }else{\r",
+									"           // console.log(\"Không tìm thấy NVL, end test\");\r",
+									"            //postman.setNextRequest(\"\");\r",
+									"        }\r",
+									"    }\r",
+									"         \r",
+									"} else {\r",
+									"    console.log(\"Can't get list product in stock, end test\");\r",
+									"    postman.setNextRequest(null);\r",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						},
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"let testCase = pm.environment.get(\"H-testCase\");",
+									"console.log(\"testCase: \" + testCase);"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{H-userToken}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{sbh_base_url}}/finan-product/api/v1/ingredient/get-list?business_id={{H-business_id}}&page=1&page_size=30",
+							"host": [
+								"{{sbh_base_url}}"
+							],
+							"path": [
+								"finan-product",
+								"api",
+								"v1",
+								"ingredient",
+								"get-list"
+							],
+							"query": [
+								{
+									"key": "business_id",
+									"value": "{{H-business_id}}"
+								},
+								{
+									"key": "page",
+									"value": "1"
+								},
+								{
+									"key": "page_size",
+									"value": "30"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Check_summary_ingredient_in_stock",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {\r",
+									"    pm.response.to.have.status(200);\r",
+									"});\r",
+									"let jsData = pm.response.json();\r",
+									"let ingredientInfo_1 = pm.environment.get(\"H-ingredientInfo_1\");\r",
+									"let ingredientInfo = pm.environment.get(\"H-ingredientInfo\");\r",
+									"\r",
+									"if (pm.response.code == 200){\r",
+									"    if (ingredientInfo.total_quantity == ingredientInfo_1.total_quantity){\r",
+									"        pm.test(\"total_amount KHÔNG THAY ĐỔI sau khi update NVL!!!\", function () {\r",
+									"        console.log(\"total_amount cũ là \"+ pm.environment.get(\"H-old_total_amount\"));        \r",
+									"        console.log(\"total_amount mới là: \" + jsData.data.total_amount);\r",
+									"        pm.expect(jsData.data.total_amount == pm.environment.get(\"H-old_total_amount\") ).to.be.true;\r",
+									"         });\r",
+									"\r",
+									"        pm.test(\"total_quantity KHÔNG THAY ĐỔI sau khi update NVL!!!\", function () {\r",
+									"        console.log(\"total_quantity cũ là \"+ pm.environment.get(\"H-old_total_quantity\"));        \r",
+									"        console.log(\"total_quantity mới là: \" + jsData.data.total_quantity);\r",
+									"        pm.expect(jsData.data.total_quantity == pm.environment.get(\"H-old_total_quantity\")).to.be.true;\r",
+									"        });\r",
+									"\r",
+									"        postman.setNextRequest(\"check_list_sokho\");\r",
+									"\r",
+									"    }else {\r",
+									"        if (ingredientInfo.total_quantity < ingredientInfo_1.total_quantity){\r",
+									"        let Quantity_increase = ingredientInfo_1.total_quantity - ingredientInfo.total_quantity;\r",
+									"        let Amount_increase = Quantity_increase * ingredientInfo_1.price;\r",
+									"        \r",
+									"        pm.test(\"total_amount TĂNG sau khi update NVL!!!\", function () {\r",
+									"        console.log(\"total_amount cũ là \"+ pm.environment.get(\"H-old_total_amount\"));        \r",
+									"        console.log(\"total_amount mới là: \" + jsData.data.total_amount);\r",
+									"         pm.expect(jsData.data.total_amount == pm.environment.get(\"H-old_total_amount\")+Amount_increase ).to.be.true;\r",
+									"        });\r",
+									"\r",
+									"        pm.test(\"total_quantity TĂNG sau khi update NVL!!!\", function () {\r",
+									"        console.log(\"total_quantity cũ là \"+ pm.environment.get(\"H-old_total_quantity\"));        \r",
+									"        console.log(\"total_quantity mới là: \" + jsData.data.total_quantity);\r",
+									"        pm.expect(jsData.data.total_quantity == pm.environment.get(\"H-old_total_quantity\")+ Quantity_increase ).to.be.true;\r",
+									"             });\r",
+									"        postman.setNextRequest(\"check_list_sokho\");\r",
+									"             \r",
+									"        }else {\r",
+									"        let Quantity_decrease = ingredientInfo.total_quantity - ingredientInfo_1.total_quantity ;\r",
+									"        let Amount_decrease = Quantity_decrease * ingredientInfo_1.price;\r",
+									"        \r",
+									"        pm.test(\"total_amount GIẢM sau khi update NVL!!!\", function () {\r",
+									"        console.log(\"total_amount cũ là \"+ pm.environment.get(\"H-old_total_amount\"));        \r",
+									"        console.log(\"total_amount mới là: \" + jsData.data.total_amount);\r",
+									"         pm.expect(jsData.data.total_amount == pm.environment.get(\"H-old_total_amount\") - Amount_decrease ).to.be.true;\r",
+									"         });\r",
+									"        let gia_giam = pm.environment.get(\"H-old_total_amount\") - Amount_decrease;\r",
+									"        console.log(\"Amount_decrease: \"+ Amount_decrease);\r",
+									"        console.log(\"chênh lệch giá giảm thực tế: \"+ gia_giam);\r",
+									"\r",
+									"               \r",
+									"        pm.test(\"total_quantity GIẢM sau khi update NVL!!!\", function () {\r",
+									"        console.log(\"total_quantity cũ là \"+ pm.environment.get(\"H-old_total_quantity\"));        \r",
+									"        console.log(\"total_quantity mới là: \" + jsData.data.total_quantity);\r",
+									"        pm.expect(jsData.data.total_quantity == pm.environment.get(\"H-old_total_quantity\") - Quantity_decrease ).to.be.true;\r",
+									"            });\r",
+									"        let quan_giam = pm.environment.get(\"H-old_total_quantity\") - Quantity_decrease;\r",
+									"        console.log(\"Quantity_decrease: \"+ Quantity_decrease);\r",
+									"        console.log(\"chênh lệch số lượng giảm thực tế: \"+ quan_giam );\r",
+									"        postman.setNextRequest(\"check_list_sokho\");\r",
+									"\r",
+									"        }\r",
+									"    \r",
+									"    }\r",
+									"    \r",
+									"\r",
+									"} else{\r",
+									"    console.log(\"Can't get summary_ingredient, end test\");\r",
+									"    postman.setNextRequest(null);\r",
+									"}\r",
+									""
+								],
+								"type": "text/javascript"
+							}
+						},
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"let testCase = pm.environment.get(\"H-testCase\");",
+									"console.log(\"testCase: \" + testCase);"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{H-userToken}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{sbh_base_url}}/finan-product/api/v1/ingredient/get-summary?business_id={{H-business_id}}",
+							"host": [
+								"{{sbh_base_url}}"
+							],
+							"path": [
+								"finan-product",
+								"api",
+								"v1",
+								"ingredient",
+								"get-summary"
+							],
+							"query": [
+								{
+									"key": "business_id",
+									"value": "{{H-business_id}}"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "check_list_sokho",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"let testCase = pm.environment.get(\"H-testCase\");\r",
+									"console.log(\"testCase: \" + testCase);\r",
+									"\r",
+									"/*let page = pm.environment.get(\"H-page\");\r",
+									"\r",
+									"if(!page){\r",
+									"    page = 1;\r",
+									"    pm.environment.set(\"H-page\",page);\r",
+									"\r",
+									"    let page_size = 50;\r",
+									"    pm.environment.set(\"H-page_size\",page_size);\r",
+									"}*/\r",
+									"\r",
+									"// lấy full tháng hiện tại\r",
+									"let today = new Date();\r",
+									"// let firstDay = new Date(today.getFullYear(), today.getMonth(), 1);\r",
+									"// let lastDay = new Date(today.getFullYear(), today.getMonth() + 1, 1);\r",
+									"\r",
+									"// lấy full tháng trước\r",
+									"// let firstDay = new Date(today.getFullYear(), today.getMonth() - 1, 1);\r",
+									"// let lastDay = new Date(today.getFullYear(), today.getMonth(), 1);\r",
+									"\r",
+									"// lấy full ngày hiện tại\r",
+									"let firstDay = new Date(today.getFullYear(), today.getMonth(), today.getDate(), 0, 0 ,0, 0);\r",
+									"let lastDay = new Date(today.getFullYear(), today.getMonth(), today.getDate(), 23, 59 ,59, 0);\r",
+									"// \r",
+									"// let timestamp = Math.floor(firstDay.getTime()/1000) - 3*24*60*60;\r",
+									"// let last3Day = new Date(timestamp*1000);\r",
+									"// console.log(\"last3Day: \" + last3Day);\r",
+									"\r",
+									"let start_time= firstDay.toISOString();\r",
+									"let end_time= lastDay.toISOString();\r",
+									"\r",
+									"console.log(\"start_time: \" + start_time);\r",
+									"console.log(\"end_time: \" + end_time);\r",
+									"\r",
+									"pm.environment.set(\"H-start_time\",start_time);\r",
+									"pm.environment.set(\"H-end_time\",end_time);"
+								],
+								"type": "text/javascript"
+							}
+						},
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"let jsData = pm.response.json();\r",
+									"let ingredientInfo_1 = pm.environment.get(\"H-ingredientInfo_1\");\r",
+									"let ingredientInfo = pm.environment.get(\"H-ingredientInfo\");\r",
+									"\r",
+									"pm.test(\"Status code is 200\", function () {\r",
+									"    pm.response.to.have.status(200);\r",
+									"});\r",
+									"if (pm.response.code == 200){\r",
+									"    if (ingredientInfo.total_quantity == ingredientInfo_1.total_quantity){\r",
+									"        pm.test(\"KHÔNG Thêm record vào sổ kho khi update số lượng NVL không thay đổi!\", function () {\r",
+									"        console.log(\"total_rows cũ là \"+ pm.environment.get(\"H-old_total_rows\"));        \r",
+									"        console.log(\"total_rows mới là: \" + jsData.meta.total_rows);\r",
+									"         pm.expect(jsData.meta.total_rows == pm.environment.get(\"H-old_total_rows\")).to.be.true;\r",
+									"        });\r",
+									"        postman.setNextRequest(\"Check_summary_sokho\");\r",
+									"    }else{\r",
+									"        pm.test(\"Thêm record vào sổ kho sau khi update tồn kho NVL thành công\", function () {\r",
+									"        console.log(\"total_rows cũ là \"+ pm.environment.get(\"H-old_total_rows\"));        \r",
+									"        console.log(\"total_rows mới là: \" + jsData.meta.total_rows);\r",
+									"        pm.expect(jsData.meta.total_rows == pm.environment.get(\"H-old_total_rows\") + 1 ).to.be.true;\r",
+									"        });\r",
+									"        postman.setNextRequest(\"Check_summary_sokho\");\r",
+									"    }\r",
+									"\r",
+									"\r",
+									"}else{\r",
+									"    console.log(\"Error:\", JSON.stringify(jsData));\r",
+									"    console.log(\"Không get được list sổ kho, End test...\")\r",
+									"    postman.setNextRequest(null);\r",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{H-userToken}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{sbh_base_url}}/ms-warehouse-management/api/v1/po-detail/get-list?business_id={{H-business_id}}&end_time={{H-end_time}}&page=1&page_size=50&search=&sort=created_at desc&start_time={{H-start_time}}",
+							"host": [
+								"{{sbh_base_url}}"
+							],
+							"path": [
+								"ms-warehouse-management",
+								"api",
+								"v1",
+								"po-detail",
+								"get-list"
+							],
+							"query": [
+								{
+									"key": "business_id",
+									"value": "{{H-business_id}}"
+								},
+								{
+									"key": "end_time",
+									"value": "{{H-end_time}}"
+								},
+								{
+									"key": "page",
+									"value": "1"
+								},
+								{
+									"key": "page_size",
+									"value": "50"
+								},
+								{
+									"key": "search",
+									"value": ""
+								},
+								{
+									"key": "sort",
+									"value": "created_at desc"
+								},
+								{
+									"key": "start_time",
+									"value": "{{H-start_time}}"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Check_summary_sokho",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"let jsData = pm.response.json();\r",
+									"\r",
+									"pm.test(\"Status code is 200\", function () {\r",
+									"    pm.response.to.have.status(200);\r",
+									"});\r",
+									"let ingredientInfo_1 = pm.environment.get(\"H-ingredientInfo_1\");\r",
+									"let ingredientInfo = pm.environment.get(\"H-ingredientInfo\");\r",
+									"\r",
+									"if (pm.response.code == 200){\r",
+									"    if (ingredientInfo.total_quantity == ingredientInfo_1.total_quantity){\r",
+									"        pm.test(\"Tồn đầu kì KHÔNG THAY ĐỔI sau khi update NVL!!!\", function () {\r",
+									"        console.log(\"Tồn đầu kì cũ là \"+ pm.environment.get(\"H-0_first_period\"));        \r",
+									"        console.log(\"Tồn đầu kì mới là: \" + jsData.data.first_period);\r",
+									"        pm.expect(jsData.data.first_period == pm.environment.get(\"H-0_first_period\") ).to.be.true;\r",
+									"         });\r",
+									"\r",
+									"        pm.test(\"Nhập trong kì KHÔNG THAY ĐỔI sau khi update NVL!!!\", function () {\r",
+									"        console.log(\"Nhập trong kì cũ là \"+ pm.environment.get(\"H-0_inbound_in_period\"));        \r",
+									"        console.log(\"Nhập trong kì mới là: \" + jsData.data.inbound_in_period);\r",
+									"        pm.expect(jsData.data.inbound_in_period == pm.environment.get(\"H-0_inbound_in_period\")).to.be.true;\r",
+									"        });\r",
+									"\r",
+									"        pm.test(\"Xuất trong kì KHÔNG THAY ĐỔI sau khi update NVL!!!\", function () {\r",
+									"        console.log(\"Xuất trong kì cũ là \"+ pm.environment.get(\"H-0_outbound_in_period\"));        \r",
+									"        console.log(\"Xuất trong kì mới là: \" + jsData.data.outbound_in_period);\r",
+									"        pm.expect(jsData.data.outbound_in_period == pm.environment.get(\"H-0_outbound_in_period\")).to.be.true;\r",
+									"        });\r",
+									"\r",
+									"        pm.test(\"Tồn cuối kì kì KHÔNG THAY ĐỔI sau khi update NVL!!!\", function () {\r",
+									"        console.log(\"Tồn cuối kì cũ là \"+ pm.environment.get(\"H-0_last_period\"));        \r",
+									"        console.log(\"Tồn cuối kì mới là: \" + jsData.data.last_period);\r",
+									"        pm.expect(jsData.data.last_period == pm.environment.get(\"H-0_last_period\")).to.be.true;\r",
+									"        });\r",
+									"        postman.setNextRequest(\"get_ingredient _update_giá vốn\");\r",
+									"\r",
+									"    }else {\r",
+									"        if (ingredientInfo.total_quantity < ingredientInfo_1.total_quantity){\r",
+									"        let Quantity_increase = ingredientInfo_1.total_quantity - ingredientInfo.total_quantity;\r",
+									"        let Amount_increase = Quantity_increase * ingredientInfo_1.price;\r",
+									"        \r",
+									"        pm.test(\"Tồn đầu kì KHÔNG THAY ĐỔI sau khi update NVL!!!\", function () {\r",
+									"        console.log(\"Tồn đầu kì cũ là \"+ pm.environment.get(\"H-0_first_period\"));        \r",
+									"        console.log(\"Tồn đầu kì mới là: \" + jsData.data.first_period);\r",
+									"        pm.expect(jsData.data.first_period == pm.environment.get(\"H-0_first_period\") ).to.be.true;\r",
+									"         });\r",
+									"\r",
+									"        pm.test(\"Nhập trong kì TĂNG sau khi update NVL!!!\", function () {\r",
+									"        console.log(\"Nhập trong kì cũ là \"+ pm.environment.get(\"H-0_inbound_in_period\"));        \r",
+									"        console.log(\"Nhập trong kì mới là: \" + jsData.data.inbound_in_period);\r",
+									"        pm.expect(jsData.data.inbound_in_period == pm.environment.get(\"H-0_inbound_in_period\")+ Amount_increase ).to.be.true;\r",
+									"             });\r",
+									"        \r",
+									"        pm.test(\"Xuất trong kì KHÔNG THAY ĐỔI sau khi update NVL!!!\", function () {\r",
+									"        console.log(\"Xuất trong kì cũ là \"+ pm.environment.get(\"H-0_outbound_in_period\"));        \r",
+									"        console.log(\"Xuất trong kì mới là: \" + jsData.data.outbound_in_period);\r",
+									"        pm.expect(jsData.data.outbound_in_period == pm.environment.get(\"H-0_outbound_in_period\")).to.be.true;\r",
+									"        });\r",
+									"\r",
+									"        pm.test(\"Tồn cuối kì TĂNG sau khi update NVL!!!\", function () {\r",
+									"        console.log(\"Tồn cuối kì cũ là \"+ pm.environment.get(\"H-0_last_period\"));        \r",
+									"        console.log(\"Tồn cuối kì mới là: \" + jsData.data.last_period);\r",
+									"        pm.expect(jsData.data.last_period == pm.environment.get(\"H-0_last_period\") + Amount_increase).to.be.true;\r",
+									"        });\r",
+									"        postman.setNextRequest(\"get_ingredient _update_giá vốn\");\r",
+									"             \r",
+									"        }else {\r",
+									"        let Quantity_decrease = ingredientInfo.total_quantity - ingredientInfo_1.total_quantity ;\r",
+									"        let Amount_decrease = Quantity_decrease * ingredientInfo_1.price;\r",
+									"        \r",
+									"        pm.test(\"Tồn đầu kì KHÔNG THAY ĐỔI sau khi update NVL!!!\", function () {\r",
+									"        console.log(\"Tồn đầu kì cũ là \"+ pm.environment.get(\"H-0_first_period\"));        \r",
+									"        console.log(\"Tồn đầu kì mới là: \" + jsData.data.first_period);\r",
+									"        pm.expect(jsData.data.first_period == pm.environment.get(\"H-0_first_period\") ).to.be.true;\r",
+									"         });\r",
+									"\r",
+									"        pm.test(\"Nhập trong kì KHÔNG THAY ĐỔI sau khi update NVL!!!\", function () {\r",
+									"        console.log(\"Nhập trong kì cũ là \"+ pm.environment.get(\"H-0_inbound_in_period\"));        \r",
+									"        console.log(\"Nhập trong kì mới là: \" + jsData.data.inbound_in_period);\r",
+									"        pm.expect(jsData.data.inbound_in_period == pm.environment.get(\"H-0_inbound_in_period\")).to.be.true;\r",
+									"             });\r",
+									"        \r",
+									"        pm.test(\"Xuất trong kì TĂNG sau khi update NVL!!!\", function () {\r",
+									"        console.log(\"Xuất trong kì cũ là \"+ pm.environment.get(\"H-0_outbound_in_period\"));        \r",
+									"        console.log(\"Xuất trong kì mới là: \" + jsData.data.outbound_in_period);\r",
+									"        pm.expect(jsData.data.outbound_in_period == pm.environment.get(\"H-0_outbound_in_period\") + Amount_decrease).to.be.true;\r",
+									"        });\r",
+									"\r",
+									"        pm.test(\"Tồn cuối kì GIẢM sau khi update NVL!!!\", function () {\r",
+									"        console.log(\"Tồn cuối kì cũ là \"+ pm.environment.get(\"H-0_last_period\"));        \r",
+									"        console.log(\"Tồn cuối kì mới là: \" + jsData.data.last_period);\r",
+									"        pm.expect(jsData.data.last_period == pm.environment.get(\"H-0_last_period\")- Amount_decrease).to.be.true;\r",
+									"        });\r",
+									"\r",
+									"        postman.setNextRequest(\"get_ingredient _update_giá vốn\");\r",
+									"\r",
+									"        }\r",
+									"    \r",
+									"    }\r",
+									"    \r",
+									"\r",
+									"} else{\r",
+									"    console.log(\"Can't get summary_ingredient, end test\");\r",
+									"    postman.setNextRequest(null);\r",
+									"}\r",
+									"\r",
+									""
+								],
+								"type": "text/javascript"
+							}
+						},
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"let testCase = pm.environment.get(\"H-testCase\");",
+									"console.log(\"testCase: \" + testCase);"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{H-userToken}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{sbh_base_url}}/ms-warehouse-management/api/v1/po/get-period-value?business_id={{H-business_id}}&end_time={{H-end_time}}&name=&start_time={{H-start_time}}",
+							"host": [
+								"{{sbh_base_url}}"
+							],
+							"path": [
+								"ms-warehouse-management",
+								"api",
+								"v1",
+								"po",
+								"get-period-value"
+							],
+							"query": [
+								{
+									"key": "business_id",
+									"value": "{{H-business_id}}"
+								},
+								{
+									"key": "end_time",
+									"value": "{{H-end_time}}"
+								},
+								{
+									"key": "name",
+									"value": ""
+								},
+								{
+									"key": "start_time",
+									"value": "{{H-start_time}}"
+								}
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "update giá vốn NVL successfully",
+			"item": [
+				{
+					"name": "get_ingredient _update_giá vốn",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {\r",
+									"    pm.response.to.have.status(200);\r",
+									"});\r",
+									"//random number between min and max\r",
+									"function getRandomInt(min, max) {\r",
+									"  \treturn Math.floor(Math.random() * (max - min + 1)) + min;\r",
+									"}\r",
+									"if(pm.response.code == 200){\r",
+									"    let jsData = JSON.parse(responseBody);\r",
+									"  \r",
+									"    if (jsData.meta.total_rows > 0){\r",
+									"            let item;\r",
+									"            if(jsData.meta.total_rows - 1 < 30){\r",
+									"                item = getRandomInt(0,jsData.meta.total_rows - 1);\r",
+									"            } else {\r",
+									"                item = getRandomInt(0,29);\r",
+									"            }\r",
+									"            console.log(\"item: \" + item);\r",
+									"            let ingredientInfo = {\r",
+									"                \"ingre_id\":jsData.data[item].id,\r",
+									"                \"name\":jsData.data[item].name,\r",
+									"                \"business_id\":jsData.data[item].business_id,\r",
+									"                \"price\":jsData.data[item].price,               \r",
+									"                \"total_quantity\":jsData.data[item].total_quantity,\r",
+									"                \"warning_quantity\":jsData.data[item].warning_quantity,\r",
+									"                \"total_inventory\":jsData.data[item].total_inventory,\r",
+									"                \"uom_id\":jsData.data[item].uom.id\r",
+									"                //\"sub_uom_name\":jsData.data[item].uom.sub_uom.name\r",
+									"            }\r",
+									"            console.log(\"ingredientInfo: \"+ JSON.stringify(ingredientInfo));\r",
+									"            pm.environment.set(\"H-ingredientInfo\",ingredientInfo);\r",
+									"            pm.environment.set(\"H-ingreId\",ingredientInfo.ingre_id );\r",
+									"            postman.setNextRequest(\"Get_summary_ingredient_in_stock_2\");\r",
+									"    } else {\r",
+									"            console.log(\"Chưa có nguyên vật liệu trong danh sách\");\r",
+									"            postman.setNextRequest(null);\r",
+									"    }\r",
+									"         \r",
+									"} else {\r",
+									"    console.log(\"Can't get list product in stock, end test\");\r",
+									"    postman.setNextRequest(null);\r",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						},
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"let testCase = pm.environment.get(\"H-testCase\");\r",
+									"console.log(\"testCase: \" + testCase);\r",
+									"\r",
+									""
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{H-userToken}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{sbh_base_url}}/finan-product/api/v1/ingredient/get-list?business_id={{H-business_id}}&page=1&page_size=30",
+							"host": [
+								"{{sbh_base_url}}"
+							],
+							"path": [
+								"finan-product",
+								"api",
+								"v1",
+								"ingredient",
+								"get-list"
+							],
+							"query": [
+								{
+									"key": "business_id",
+									"value": "{{H-business_id}}"
+								},
+								{
+									"key": "page",
+									"value": "1"
+								},
+								{
+									"key": "page_size",
+									"value": "30"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get_summary_ingredient_in_stock_2",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {\r",
+									"    pm.response.to.have.status(200);\r",
+									"});\r",
+									"\r",
+									"if (pm.response.code == 200){\r",
+									"let jsData = pm.response.json();\r",
+									"pm.environment.set(\"H-old_total_amount_1\",jsData.data.total_amount);\r",
+									"pm.environment.set(\"H-old_total_quantity_1\",jsData.data.total_quantity);\r",
+									"postman.setNextRequest(\"get_list_sokho_2\");\r",
+									"} else{\r",
+									"    console.log(\"Can't get summary_ingredient, end test\");\r",
+									"    postman.setNextRequest(null);\r",
+									"}\r",
+									""
+								],
+								"type": "text/javascript"
+							}
+						},
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"let testCase = pm.environment.get(\"H-testCase\");",
+									"console.log(\"testCase: \" + testCase);"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{H-userToken}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{sbh_base_url}}/finan-product/api/v1/ingredient/get-summary?business_id={{H-business_id}}",
+							"host": [
+								"{{sbh_base_url}}"
+							],
+							"path": [
+								"finan-product",
+								"api",
+								"v1",
+								"ingredient",
+								"get-summary"
+							],
+							"query": [
+								{
+									"key": "business_id",
+									"value": "{{H-business_id}}"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "get_list_sokho_2",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"let testCase = pm.environment.get(\"H-testCase\");\r",
+									"console.log(\"testCase: \" + testCase);\r",
+									"\r",
+									"/*let page = pm.environment.get(\"H-page\");\r",
+									"\r",
+									"if(!page){\r",
+									"    page = 1;\r",
+									"    pm.environment.set(\"H-page\",page);\r",
+									"\r",
+									"    let page_size = 50;\r",
+									"    pm.environment.set(\"H-page_size\",page_size);\r",
+									"}*/\r",
+									"\r",
+									"// lấy full tháng hiện tại\r",
+									"let today = new Date();\r",
+									"// let firstDay = new Date(today.getFullYear(), today.getMonth(), 1);\r",
+									"// let lastDay = new Date(today.getFullYear(), today.getMonth() + 1, 1);\r",
+									"\r",
+									"// lấy full tháng trước\r",
+									"// let firstDay = new Date(today.getFullYear(), today.getMonth() - 1, 1);\r",
+									"// let lastDay = new Date(today.getFullYear(), today.getMonth(), 1);\r",
+									"\r",
+									"// lấy full ngày hiện tại\r",
+									"let firstDay = new Date(today.getFullYear(), today.getMonth(), today.getDate(), 0, 0 ,0, 0);\r",
+									"let lastDay = new Date(today.getFullYear(), today.getMonth(), today.getDate(), 23, 59 ,59, 0);\r",
+									"// \r",
+									"// let timestamp = Math.floor(firstDay.getTime()/1000) - 3*24*60*60;\r",
+									"// let last3Day = new Date(timestamp*1000);\r",
+									"// console.log(\"last3Day: \" + last3Day);\r",
+									"\r",
+									"let start_time= firstDay.toISOString();\r",
+									"let end_time= lastDay.toISOString();\r",
+									"\r",
+									"console.log(\"start_time: \" + start_time);\r",
+									"console.log(\"end_time: \" + end_time);\r",
+									"\r",
+									"pm.environment.set(\"H-start_time\",start_time);\r",
+									"pm.environment.set(\"H-end_time\",end_time);"
+								],
+								"type": "text/javascript"
+							}
+						},
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"let jsData = pm.response.json();\r",
+									"\r",
+									"pm.test(\"Status code is 200\", function () {\r",
+									"    pm.response.to.have.status(200);\r",
+									"});\r",
+									"if (pm.response.code == 200){\r",
+									"    pm.environment.set(\"H-old_total_rows_1\",jsData.meta.total_rows);\r",
+									" \r",
+									"     postman.setNextRequest(\"get_summary_sokho_2\");\r",
+									"}else{\r",
+									"    console.log(\"Error:\", JSON.stringify(jsData));\r",
+									"    console.log(\"Không get được list sổ kho, End test...\")\r",
+									"    postman.setNextRequest(null);\r",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{H-userToken}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{sbh_base_url}}/ms-warehouse-management/api/v1/po-detail/get-list?business_id={{H-business_id}}&end_time={{H-end_time}}&page=1&page_size=50&search=&sort=created_at desc&start_time={{H-start_time}}",
+							"host": [
+								"{{sbh_base_url}}"
+							],
+							"path": [
+								"ms-warehouse-management",
+								"api",
+								"v1",
+								"po-detail",
+								"get-list"
+							],
+							"query": [
+								{
+									"key": "business_id",
+									"value": "{{H-business_id}}"
+								},
+								{
+									"key": "end_time",
+									"value": "{{H-end_time}}"
+								},
+								{
+									"key": "page",
+									"value": "1"
+								},
+								{
+									"key": "page_size",
+									"value": "50"
+								},
+								{
+									"key": "search",
+									"value": ""
+								},
+								{
+									"key": "sort",
+									"value": "created_at desc"
+								},
+								{
+									"key": "start_time",
+									"value": "{{H-start_time}}"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "get_summary_sokho_2",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"let jsData = pm.response.json();\r",
+									"\r",
+									"pm.test(\"Status code is 200\", function () {\r",
+									"    pm.response.to.have.status(200);\r",
+									"});\r",
+									"if (pm.response.code == 200){\r",
+									"    let testCase = pm.environment.get(\"H-testCase\");\r",
+									"    pm.environment.set(\"H-1_first_period\",jsData.data.first_period);\r",
+									"    pm.environment.set(\"H-1_inbound_in_period\",jsData.data.inbound_in_period);\r",
+									"    pm.environment.set(\"H-1_outbound_in_period\",jsData.data.outbound_in_period);\r",
+									"    pm.environment.set(\"H-1_last_period\",jsData.data.last_period);\r",
+									"    console.log(\"Tồn đầu kì: \" + jsData.data.first_period + \" Tồn cuối kì: \" + jsData.data.last_period)\r",
+									"\r",
+									"    testCase++;\r",
+									"    pm.environment.set(\"H-testCase\",testCase);\r",
+									"     postman.setNextRequest(\"update_price_ingredient_successfully\");\r",
+									"}else{\r",
+									"    console.log(\"Error:\", JSON.stringify(jsData));\r",
+									"    console.log(\"không lấy được thông tin tồn đầu kì/cuối kì, End test...\")\r",
+									"    postman.setNextRequest(null);\r",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						},
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"let testCase = pm.environment.get(\"H-testCase\");",
+									"console.log(\"testCase: \" + testCase);"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{H-userToken}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{sbh_base_url}}/ms-warehouse-management/api/v1/po/get-period-value?business_id={{H-business_id}}&end_time={{H-end_time}}&name=&start_time={{H-start_time}}",
+							"host": [
+								"{{sbh_base_url}}"
+							],
+							"path": [
+								"ms-warehouse-management",
+								"api",
+								"v1",
+								"po",
+								"get-period-value"
+							],
+							"query": [
+								{
+									"key": "business_id",
+									"value": "{{H-business_id}}"
+								},
+								{
+									"key": "end_time",
+									"value": "{{H-end_time}}"
+								},
+								{
+									"key": "name",
+									"value": ""
+								},
+								{
+									"key": "start_time",
+									"value": "{{H-start_time}}"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "update_price_ingredient_successfully",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"//random characters\r",
+									"function randomChars(length) {\r",
+									"    var result           = '';\r",
+									"    var characters       = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';\r",
+									"    var charactersLength = characters.length;\r",
+									"    for ( var i = 0; i < length; i++ ) {\r",
+									"      result += characters.charAt(Math.floor(Math.random() * \r",
+									" charactersLength));\r",
+									"   }\r",
+									"   return result;\r",
+									"}\r",
+									"//random number between min and max\r",
+									"function getRandomInt(min, max) {\r",
+									"  \treturn Math.floor(Math.random() * (max - min + 1)) + min;\r",
+									"}\r",
+									"\r",
+									"let testCase = pm.environment.get(\"H-testCase\");\r",
+									"console.log(\"testCase: \" + testCase);\r",
+									"\r",
+									"//console.log(\"testCase: \" + testCase);\r",
+									"let payload = null;\r",
+									"let rand_price = getRandomInt(1,100)*1000;\r",
+									"pm.environment.set(\"H-rand_price\",rand_price);\r",
+									"console.log(\"rand_price: \" + rand_price);\r",
+									"let ingredientInfo = pm.environment.get(\"H-ingredientInfo\");\r",
+									" // Update Giá vốn NVL thành công\r",
+									"    console.log(\"Update giá vón NVL hợp lệ !!!\")\r",
+									"            payload = {\r",
+									"\t        \"business_id\": ingredientInfo.business_id,\r",
+									"\t        \"name\": ingredientInfo.name ,\r",
+									"\t        \"price\":rand_price,\r",
+									"\t        \"total_quantity\": ingredientInfo.total_quantity,\r",
+									"\t        \"warning_quantity\": ingredientInfo.warning_quantity,\r",
+									"\t        \"uom_id\": ingredientInfo.uom_id\r",
+									"            }\r",
+									"\r",
+									"           \r",
+									"            console.log(\"H-payload\",payload);\r",
+									"\r",
+									"pm.environment.set(\"H-payload\",JSON.stringify(payload));"
+								],
+								"type": "text/javascript"
+							}
+						},
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"   \r",
+									"    let jsData = JSON.parse(responseBody);\r",
+									"    let payload = JSON.parse(pm.environment.get(\"H-payload\"));\r",
+									"  \r",
+									"    if (pm.response.code == 200){\r",
+									"        let testCase = pm.environment.get(\"H-testCase\");\r",
+									"        let ingredientInfo_2 = {\r",
+									"            \"ingre_id\":jsData.data.id,\r",
+									"            \"name\":jsData.data.name,\r",
+									"            \"business_id\":jsData.data.business_id,\r",
+									"            \"price\":jsData.data.price,               \r",
+									"            \"total_quantity\":jsData.data.total_quantity,\r",
+									"            \"warning_quantity\":jsData.data.warning_quantity,\r",
+									"            \"total_inventory\":jsData.data.total_inventory,\r",
+									"            \"uom_id\":jsData.data.uom_id\r",
+									"            \r",
+									"        }\r",
+									"        console.log(\"ingredientInfo_2: \"+ JSON.stringify(ingredientInfo_2));\r",
+									"        pm.environment.set(\"H-ingredientInfo_2\",ingredientInfo_2);\r",
+									"        pm.environment.set(\"H-ingreId\",ingredientInfo_2.ingre_id );\r",
+									"\r",
+									"        pm.test(\"Tên NVL sau khi update đúng với input!!!\", function () {\r",
+									"            console.log(\"Input Tên NVL update: \"+ payload.name);        \r",
+									"            console.log(\"Tên NVL sau khi update: \" + ingredientInfo_2.name);\r",
+									"            pm.expect(payload.name == ingredientInfo_2.name).to.be.true;\r",
+									"            });\r",
+									"        pm.test(\"Giá vốn NVL sau khi update đúng với input!!!\", function () {\r",
+									"            console.log(\"Input Giá vốn NVL update: \"+ payload.price);        \r",
+									"            console.log(\"Giá vốn NVL sau khi update: \" + ingredientInfo_2.price);\r",
+									"            pm.expect(payload.price == ingredientInfo_2.price).to.be.true;\r",
+									"            });\r",
+									"        pm.test(\"Số lượng tồn kho NVL sau khi update đúng với input!!!\", function () {\r",
+									"            console.log(\"Input Số lượng tồn kho NVL update: \"+ payload.total_quantity);        \r",
+									"            console.log(\"Số lượng tồn kho NVL sau khi update: \" + ingredientInfo_2.total_quantity);\r",
+									"            pm.expect(payload.total_quantity == ingredientInfo_2.total_quantity).to.be.true;\r",
+									"            });\r",
+									"        pm.test(\"Cảnh báo tồn kho thấp NVL sau khi update đúng với input!!!\", function () {\r",
+									"            console.log(\"Input Cảnh báo tồn kho thấp NVL update: \"+ payload.warning_quantity);        \r",
+									"            console.log(\"Cảnh báo tồn kho thấp NVL sau khi update: \" + ingredientInfo_2.warning_quantity);\r",
+									"            pm.expect(payload.warning_quantity == ingredientInfo_2.warning_quantity).to.be.true;\r",
+									"            });\r",
+									"        pm.test(\"đơn vị NVL sau khi update đúng với input!!!\", function () {\r",
+									"            console.log(\"Input đơn vị NVL update: \"+ payload.uom_id);        \r",
+									"            console.log(\"đơn vị NVL sau khi update: \" + ingredientInfo_2.uom_id);\r",
+									"            pm.expect(payload.uom_id == ingredientInfo_2.uom_id).to.be.true;\r",
+									"            });\r",
+									"        testCase++;\r",
+									"        pm.environment.set(\"H-testCase\",testCase);\r",
+									"        postman.setNextRequest(\"CheckData_in_list_kho_2\");\r",
+									"    } else {\r",
+									"            console.log(\"Update tồn kho nguyên vật liệu không thành công !\");\r",
+									"            postman.setNextRequest(null);\r",
+									"    }\r",
+									"         \r",
+									""
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{H-userToken}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{{H-payload}}"
+						},
+						"url": {
+							"raw": "{{sbh_base_url}}/finan-product/api/v1/ingredient/update/{{H-ingreId}}",
+							"host": [
+								"{{sbh_base_url}}"
+							],
+							"path": [
+								"finan-product",
+								"api",
+								"v1",
+								"ingredient",
+								"update",
+								"{{H-ingreId}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "CheckData_in_list_kho_2",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {\r",
+									"    pm.response.to.have.status(200);\r",
+									"});\r",
+									"let ingredientInfo_2 = pm.environment.get(\"H-ingredientInfo_2\");\r",
+									"let ingredientInfo = pm.environment.get(\"H-ingredientInfo\");\r",
+									"if(pm.response.code == 200){\r",
+									"    let jsData = JSON.parse(responseBody);\r",
+									"  for(let item in jsData.data){\r",
+									"      // get data của ingredient đã update trong list ingredient kho\r",
+									"        if(jsData.data[item].id==ingredientInfo_2.ingre_id){\r",
+									"           let data_ingredient_update_1 = {\r",
+									"               \"ingre_id\":jsData.data[item].id,\r",
+									"                \"name\":jsData.data[item].name,\r",
+									"                \"business_id\":jsData.data[item].business_id,\r",
+									"                \"price\":jsData.data[item].price,               \r",
+									"                \"total_quantity\":jsData.data[item].total_quantity,\r",
+									"                \"warning_quantity\":jsData.data[item].warning_quantity,\r",
+									"                \"total_inventory\":jsData.data[item].total_inventory,\r",
+									"                \"uom_id\":jsData.data[item].uom.id \r",
+									"            }\r",
+									"            console.log(\"data_ingredient_update: \"+ JSON.stringify(data_ingredient_update_1));\r",
+									"\r",
+									"            pm.test(\"Update giá vốn NVL thành công!!!\", function () {\r",
+									"            console.log(\"Giá vốn ingredient cũ là \"+ ingredientInfo.price);        \r",
+									"            console.log(\"Giá vốn ingredient mới là: \" + ingredientInfo_2.price);\r",
+									"            pm.expect(data_ingredient_update_1.price == ingredientInfo_2.price).to.be.true;\r",
+									"             });\r",
+									"\r",
+									"            postman.setNextRequest(\"Check_summary_ingredient_in_stock_2\");     \r",
+									"\r",
+									"        }else{\r",
+									"           // console.log(\"Không tìm thấy NVL, end test\");\r",
+									"            //postman.setNextRequest(\"\");\r",
+									"        }\r",
+									"    }\r",
+									"         \r",
+									"} else {\r",
+									"    console.log(\"Can't get list product in stock, end test\");\r",
+									"    postman.setNextRequest(null);\r",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						},
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"let testCase = pm.environment.get(\"H-testCase\");",
+									"console.log(\"testCase: \" + testCase);"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{H-userToken}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{sbh_base_url}}/finan-product/api/v1/ingredient/get-list?business_id={{H-business_id}}&page=1&page_size=30",
+							"host": [
+								"{{sbh_base_url}}"
+							],
+							"path": [
+								"finan-product",
+								"api",
+								"v1",
+								"ingredient",
+								"get-list"
+							],
+							"query": [
+								{
+									"key": "business_id",
+									"value": "{{H-business_id}}"
+								},
+								{
+									"key": "page",
+									"value": "1"
+								},
+								{
+									"key": "page_size",
+									"value": "30"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Check_summary_ingredient_in_stock_2",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {\r",
+									"    pm.response.to.have.status(200);\r",
+									"});\r",
+									"let jsData = pm.response.json();\r",
+									"let ingredientInfo_2 = pm.environment.get(\"H-ingredientInfo_2\");\r",
+									"let ingredientInfo = pm.environment.get(\"H-ingredientInfo\");\r",
+									"\r",
+									"if (pm.response.code == 200){\r",
+									"    if (ingredientInfo.price == ingredientInfo_2.price){\r",
+									"        pm.test(\"total_amount KHÔNG THAY ĐỔI sau khi update NVL!!!\", function () {\r",
+									"        console.log(\"total_amount cũ là \"+ pm.environment.get(\"H-old_total_amount_1\"));        \r",
+									"        console.log(\"total_amount mới là: \" + jsData.data.total_amount);\r",
+									"        pm.expect(jsData.data.total_amount == pm.environment.get(\"H-old_total_amount_1\") ).to.be.true;\r",
+									"         });\r",
+									"\r",
+									"        pm.test(\"total_quantity KHÔNG THAY ĐỔI sau khi update NVL!!!\", function () {\r",
+									"        console.log(\"total_quantity cũ là \"+ pm.environment.get(\"H-old_total_quantity_1\"));        \r",
+									"        console.log(\"total_quantity mới là: \" + jsData.data.total_quantity);\r",
+									"        pm.expect(jsData.data.total_quantity == pm.environment.get(\"H-old_total_quantity_1\")).to.be.true;\r",
+									"        });\r",
+									"\r",
+									"        postman.setNextRequest(\"check_list_sokho_2\");\r",
+									"\r",
+									"    }else {\r",
+									"        if (ingredientInfo.price < ingredientInfo_2.price){\r",
+									"        let price_increase = ingredientInfo_2.price - ingredientInfo.price;\r",
+									"        let Amount_increase = ingredientInfo_2.total_quantity * price_increase;\r",
+									"        \r",
+									"        pm.test(\"total_amount TĂNG sau khi update giá vốn tăng NVL!!!\", function () {\r",
+									"        console.log(\"total_amount cũ là \"+ pm.environment.get(\"H-old_total_amount_1\"));        \r",
+									"        console.log(\"total_amount mới là: \" + jsData.data.total_amount);\r",
+									"         pm.expect(jsData.data.total_amount == pm.environment.get(\"H-old_total_amount_1\")+Amount_increase ).to.be.true;\r",
+									"        });\r",
+									"\r",
+									"        pm.test(\"total_quantity KHÔNG ĐỔI sau khi update giá vốn NVL!!!\", function () {\r",
+									"        console.log(\"total_quantity cũ là \"+ pm.environment.get(\"H-old_total_quantity_1\"));        \r",
+									"        console.log(\"total_quantity mới là: \" + jsData.data.total_quantity);\r",
+									"        pm.expect(jsData.data.total_quantity == pm.environment.get(\"H-old_total_quantity_1\") ).to.be.true;\r",
+									"             });\r",
+									"        postman.setNextRequest(\"check_list_sokho_2\");\r",
+									"             \r",
+									"        }else {\r",
+									"        let price_decrease = ingredientInfo.price - ingredientInfo_2.price ;\r",
+									"        let Amount_decrease =  ingredientInfo_2.total_quantity * price_decrease;\r",
+									"        \r",
+									"        pm.test(\"total_amount GIẢM sau khi update giá vốn giảm NVL!!!\", function () {\r",
+									"        console.log(\"total_amount cũ là \"+ pm.environment.get(\"H-old_total_amount_1\"));        \r",
+									"        console.log(\"total_amount mới là: \" + jsData.data.total_amount);\r",
+									"         pm.expect(jsData.data.total_amount == pm.environment.get(\"H-old_total_amount_1\") - Amount_decrease ).to.be.true;\r",
+									"         });\r",
+									"        console.log(\"Amount_decrease: \"+ Amount_decrease);\r",
+									"        console.log(\"chênh lệch giá giảm thực tế: \", pm.environment.get(\"H-old_total_amount_1\") - Amount_decrease);\r",
+									"\r",
+									"        pm.test(\"total_quantity KHÔNG ĐỔI sau khi update giá vốn NVL!!!\", function () {\r",
+									"        console.log(\"total_quantity cũ là \"+ pm.environment.get(\"H-old_total_quantity_1\"));        \r",
+									"        console.log(\"total_quantity mới là: \" + jsData.data.total_quantity);\r",
+									"        pm.expect(jsData.data.total_quantity == pm.environment.get(\"H-old_total_quantity_1\")).to.be.true;\r",
+									"            });\r",
+									"\r",
+									"        postman.setNextRequest(\"check_list_sokho_2\");\r",
+									"\r",
+									"        }\r",
+									"    \r",
+									"    }\r",
+									"    \r",
+									"\r",
+									"} else{\r",
+									"    console.log(\"Can't get summary_ingredient, end test\");\r",
+									"    postman.setNextRequest(null);\r",
+									"}\r",
+									""
+								],
+								"type": "text/javascript"
+							}
+						},
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"let testCase = pm.environment.get(\"H-testCase\");",
+									"console.log(\"testCase: \" + testCase);"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{H-userToken}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{sbh_base_url}}/finan-product/api/v1/ingredient/get-summary?business_id={{H-business_id}}",
+							"host": [
+								"{{sbh_base_url}}"
+							],
+							"path": [
+								"finan-product",
+								"api",
+								"v1",
+								"ingredient",
+								"get-summary"
+							],
+							"query": [
+								{
+									"key": "business_id",
+									"value": "{{H-business_id}}"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "check_list_sokho_2",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"let testCase = pm.environment.get(\"H-testCase\");\r",
+									"console.log(\"testCase: \" + testCase);\r",
+									"\r",
+									"/*let page = pm.environment.get(\"H-page\");\r",
+									"\r",
+									"if(!page){\r",
+									"    page = 1;\r",
+									"    pm.environment.set(\"H-page\",page);\r",
+									"\r",
+									"    let page_size = 50;\r",
+									"    pm.environment.set(\"H-page_size\",page_size);\r",
+									"}*/\r",
+									"\r",
+									"// lấy full tháng hiện tại\r",
+									"let today = new Date();\r",
+									"// let firstDay = new Date(today.getFullYear(), today.getMonth(), 1);\r",
+									"// let lastDay = new Date(today.getFullYear(), today.getMonth() + 1, 1);\r",
+									"\r",
+									"// lấy full tháng trước\r",
+									"// let firstDay = new Date(today.getFullYear(), today.getMonth() - 1, 1);\r",
+									"// let lastDay = new Date(today.getFullYear(), today.getMonth(), 1);\r",
+									"\r",
+									"// lấy full ngày hiện tại\r",
+									"let firstDay = new Date(today.getFullYear(), today.getMonth(), today.getDate(), 0, 0 ,0, 0);\r",
+									"let lastDay = new Date(today.getFullYear(), today.getMonth(), today.getDate(), 23, 59 ,59, 0);\r",
+									"// \r",
+									"// let timestamp = Math.floor(firstDay.getTime()/1000) - 3*24*60*60;\r",
+									"// let last3Day = new Date(timestamp*1000);\r",
+									"// console.log(\"last3Day: \" + last3Day);\r",
+									"\r",
+									"let start_time= firstDay.toISOString();\r",
+									"let end_time= lastDay.toISOString();\r",
+									"\r",
+									"console.log(\"start_time: \" + start_time);\r",
+									"console.log(\"end_time: \" + end_time);\r",
+									"\r",
+									"pm.environment.set(\"H-start_time\",start_time);\r",
+									"pm.environment.set(\"H-end_time\",end_time);"
+								],
+								"type": "text/javascript"
+							}
+						},
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"let jsData = pm.response.json();\r",
+									"let ingredientInfo_2 = pm.environment.get(\"H-ingredientInfo_2\");\r",
+									"let ingredientInfo = pm.environment.get(\"H-ingredientInfo\");\r",
+									"\r",
+									"pm.test(\"Status code is 200\", function () {\r",
+									"    pm.response.to.have.status(200);\r",
+									"});\r",
+									"if (pm.response.code == 200){\r",
+									"    if (ingredientInfo.price == ingredientInfo_2.price){\r",
+									"        pm.test(\"KHÔNG Thêm record vào sổ kho khi update giá vốn NVL không thay đổi!\", function () {\r",
+									"        console.log(\"total_rows cũ là \"+ pm.environment.get(\"H-old_total_rows_1\"));        \r",
+									"        console.log(\"total_rows mới là: \" + jsData.meta.total_rows);\r",
+									"         pm.expect(jsData.meta.total_rows == pm.environment.get(\"H-old_total_rows_1\")).to.be.true;\r",
+									"        });\r",
+									"        postman.setNextRequest(\"Check_summary_sokho_2\");\r",
+									"    }else{\r",
+									"        pm.test(\"Thêm record vào sổ kho sau khi update giá NVL thành công\", function () {\r",
+									"        console.log(\"total_rows cũ là \"+ pm.environment.get(\"H-old_total_rows_1\"));        \r",
+									"        console.log(\"total_rows mới là: \" + jsData.meta.total_rows);\r",
+									"        pm.expect(jsData.meta.total_rows == pm.environment.get(\"H-old_total_rows_1\") + 1 ).to.be.true;\r",
+									"        });\r",
+									"        postman.setNextRequest(\"Check_summary_sokho_2\");\r",
+									"    }\r",
+									"\r",
+									"\r",
+									"}else{\r",
+									"    console.log(\"Error:\", JSON.stringify(jsData));\r",
+									"    console.log(\"Không get được list sổ kho, End test...\")\r",
+									"    postman.setNextRequest(null);\r",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{H-userToken}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{sbh_base_url}}/ms-warehouse-management/api/v1/po-detail/get-list?business_id={{H-business_id}}&end_time={{H-end_time}}&page=1&page_size=50&search=&sort=created_at desc&start_time={{H-start_time}}",
+							"host": [
+								"{{sbh_base_url}}"
+							],
+							"path": [
+								"ms-warehouse-management",
+								"api",
+								"v1",
+								"po-detail",
+								"get-list"
+							],
+							"query": [
+								{
+									"key": "business_id",
+									"value": "{{H-business_id}}"
+								},
+								{
+									"key": "end_time",
+									"value": "{{H-end_time}}"
+								},
+								{
+									"key": "page",
+									"value": "1"
+								},
+								{
+									"key": "page_size",
+									"value": "50"
+								},
+								{
+									"key": "search",
+									"value": ""
+								},
+								{
+									"key": "sort",
+									"value": "created_at desc"
+								},
+								{
+									"key": "start_time",
+									"value": "{{H-start_time}}"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Check_summary_sokho_2",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"let jsData = pm.response.json();\r",
+									"\r",
+									"pm.test(\"Status code is 200\", function () {\r",
+									"    pm.response.to.have.status(200);\r",
+									"});\r",
+									"let ingredientInfo_2 = pm.environment.get(\"H-ingredientInfo_2\");\r",
+									"let ingredientInfo = pm.environment.get(\"H-ingredientInfo\");\r",
+									"\r",
+									"if (pm.response.code == 200){\r",
+									"    if (ingredientInfo.price == ingredientInfo_2.price){\r",
+									"        pm.test(\"Tồn đầu kì KHÔNG THAY ĐỔI sau khi update giá vốn NVL!!!\", function () {\r",
+									"        console.log(\"Tồn đầu kì cũ là \"+ pm.environment.get(\"H-1_first_period\"));        \r",
+									"        console.log(\"Tồn đầu kì mới là: \" + jsData.data.first_period);\r",
+									"        pm.expect(jsData.data.first_period == pm.environment.get(\"H-1_first_period\") ).to.be.true;\r",
+									"         });\r",
+									"\r",
+									"        pm.test(\"Nhập trong kì KHÔNG THAY ĐỔI sau khi update giá vốn NVL!!!\", function () {\r",
+									"        console.log(\"Nhập trong kì cũ là \"+ pm.environment.get(\"H-1_inbound_in_period\"));        \r",
+									"        console.log(\"Nhập trong kì mới là: \" + jsData.data.inbound_in_period);\r",
+									"        pm.expect(jsData.data.inbound_in_period == pm.environment.get(\"H-1_inbound_in_period\")).to.be.true;\r",
+									"        });\r",
+									"\r",
+									"        pm.test(\"Xuất trong kì KHÔNG THAY ĐỔI sau khi update giá vốn NVL!!!\", function () {\r",
+									"        console.log(\"Xuất trong kì cũ là \"+ pm.environment.get(\"H-1_outbound_in_period\"));        \r",
+									"        console.log(\"Xuất trong kì mới là: \" + jsData.data.outbound_in_period);\r",
+									"        pm.expect(jsData.data.outbound_in_period == pm.environment.get(\"H-1_outbound_in_period\")).to.be.true;\r",
+									"        });\r",
+									"\r",
+									"        pm.test(\"Tồn cuối kì kì KHÔNG THAY ĐỔI sau khi update giá vốn NVL!!!\", function () {\r",
+									"        console.log(\"Tồn cuối kì cũ là \"+ pm.environment.get(\"H-1_last_period\"));        \r",
+									"        console.log(\"Tồn cuối kì mới là: \" + jsData.data.last_period);\r",
+									"        pm.expect(jsData.data.last_period == pm.environment.get(\"H-1_last_period\")).to.be.true;\r",
+									"        });\r",
+									"       console.log(\"--- End Testsuite ---\");\r",
+									"\r",
+									"    }else {\r",
+									"        if (ingredientInfo.price < ingredientInfo_2.price){\r",
+									"         let price_increase = ingredientInfo_2.price - ingredientInfo.price;\r",
+									"        let Amount_increase = ingredientInfo_2.total_quantity * price_increase;\r",
+									"        \r",
+									"        pm.test(\"Tồn đầu kì KHÔNG THAY ĐỔI sau khi update giá vốn NVL!!!\", function () {\r",
+									"        console.log(\"Tồn đầu kì cũ là \"+ pm.environment.get(\"H-1_first_period\"));        \r",
+									"        console.log(\"Tồn đầu kì mới là: \" + jsData.data.first_period);\r",
+									"        pm.expect(jsData.data.first_period == pm.environment.get(\"H-1_first_period\") ).to.be.true;\r",
+									"         });\r",
+									"\r",
+									"        pm.test(\"Nhập trong kì TĂNG sau khi update giá vốn tăng NVL!!!\", function () {\r",
+									"        console.log(\"Nhập trong kì cũ là \"+ pm.environment.get(\"H-1_inbound_in_period\"));        \r",
+									"        console.log(\"Nhập trong kì mới là: \" + jsData.data.inbound_in_period);\r",
+									"        pm.expect(jsData.data.inbound_in_period == pm.environment.get(\"H-1_inbound_in_period\")+ Amount_increase ).to.be.true;\r",
+									"             });\r",
+									"        \r",
+									"        pm.test(\"Xuất trong kì KHÔNG THAY ĐỔI sau khi update giá vốn NVL!!!\", function () {\r",
+									"        console.log(\"Xuất trong kì cũ là \"+ pm.environment.get(\"H-1_outbound_in_period\"));        \r",
+									"        console.log(\"Xuất trong kì mới là: \" + jsData.data.outbound_in_period);\r",
+									"        pm.expect(jsData.data.outbound_in_period == pm.environment.get(\"H-1_outbound_in_period\")).to.be.true;\r",
+									"        });\r",
+									"\r",
+									"        pm.test(\"Tồn cuối kì TĂNG sau khi update giá vốn tăng NVL!!!\", function () {\r",
+									"        console.log(\"Tồn cuối kì cũ là \"+ pm.environment.get(\"H-1_last_period\"));        \r",
+									"        console.log(\"Tồn cuối kì mới là: \" + jsData.data.last_period);\r",
+									"        pm.expect(jsData.data.last_period == pm.environment.get(\"H-1_last_period\") + Amount_increase).to.be.true;\r",
+									"        });\r",
+									"        console.log(\"--- End Testsuite ---\");\r",
+									"             \r",
+									"        }else {\r",
+									"        let price_decrease = ingredientInfo.price - ingredientInfo_2.price ;\r",
+									"        let Amount_decrease =  ingredientInfo_2.total_quantity * price_decrease;\r",
+									"        \r",
+									"        pm.test(\"Tồn đầu kì KHÔNG THAY ĐỔI sau khi update giá vốn NVL!!!\", function () {\r",
+									"        console.log(\"Tồn đầu kì cũ là \"+ pm.environment.get(\"H-1_first_period\"));        \r",
+									"        console.log(\"Tồn đầu kì mới là: \" + jsData.data.first_period);\r",
+									"        pm.expect(jsData.data.first_period == pm.environment.get(\"H-1_first_period\") ).to.be.true;\r",
+									"         });\r",
+									"\r",
+									"        pm.test(\"Nhập trong kì KHÔNG THAY ĐỔI sau khi update giá vốn NVL!!!\", function () {\r",
+									"        console.log(\"Nhập trong kì cũ là \"+ pm.environment.get(\"H-1_inbound_in_period\"));        \r",
+									"        console.log(\"Nhập trong kì mới là: \" + jsData.data.inbound_in_period);\r",
+									"        pm.expect(jsData.data.inbound_in_period == pm.environment.get(\"H-1_inbound_in_period\")).to.be.true;\r",
+									"             });\r",
+									"        \r",
+									"        pm.test(\"Xuất trong kì TĂNG sau khi update giá vốn NVL!!!\", function () {\r",
+									"        console.log(\"Xuất trong kì cũ là \"+ pm.environment.get(\"H-1_outbound_in_period\"));        \r",
+									"        console.log(\"Xuất trong kì mới là: \" + jsData.data.outbound_in_period);\r",
+									"        pm.expect(jsData.data.outbound_in_period == pm.environment.get(\"H-1_outbound_in_period\") + Amount_decrease).to.be.true;\r",
+									"        });\r",
+									"\r",
+									"        pm.test(\"Tồn cuối kì GIẢM sau khi update giá vốn giảm NVL!!!\", function () {\r",
+									"        console.log(\"Tồn cuối kì cũ là \"+ pm.environment.get(\"H-1_last_period\"));        \r",
+									"        console.log(\"Tồn cuối kì mới là: \" + jsData.data.last_period);\r",
+									"        pm.expect(jsData.data.last_period == pm.environment.get(\"H-1_last_period\")- Amount_decrease).to.be.true;\r",
+									"        });\r",
+									"\r",
+									"        console.log(\"--- End Testsuite ---\");\r",
+									"\r",
+									"        }\r",
+									"    \r",
+									"    }\r",
+									"    \r",
+									"\r",
+									"} else{\r",
+									"    console.log(\"Can't get summary_ingredient, end test\");\r",
+									"    postman.setNextRequest(null);\r",
+									"}\r",
+									"\r",
+									""
+								],
+								"type": "text/javascript"
+							}
+						},
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"let testCase = pm.environment.get(\"H-testCase\");",
+									"console.log(\"testCase: \" + testCase);"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{H-userToken}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{sbh_base_url}}/ms-warehouse-management/api/v1/po/get-period-value?business_id={{H-business_id}}&end_time={{H-end_time}}&name=&start_time={{H-start_time}}",
+							"host": [
+								"{{sbh_base_url}}"
+							],
+							"path": [
+								"ms-warehouse-management",
+								"api",
+								"v1",
+								"po",
+								"get-period-value"
+							],
+							"query": [
+								{
+									"key": "business_id",
+									"value": "{{H-business_id}}"
+								},
+								{
+									"key": "end_time",
+									"value": "{{H-end_time}}"
+								},
+								{
+									"key": "name",
+									"value": ""
+								},
+								{
+									"key": "start_time",
+									"value": "{{H-start_time}}"
+								}
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		}
+	]
+}

@@ -1,0 +1,2519 @@
+{
+	"info": {
+		"_postman_id": "d07dd3e1-f283-489a-bed5-4166e4b162c7",
+		"name": "sbh_87_check_to_create_inbound_include_uom_product",
+		"description": "### Testsuite: Create inbound with uom product\n\nTestcase:\n\n1. Login seller account\n2. Get info:\n    1. ProductUI / Get all products - had uom\n    2. Warehouse UI / Product / Get all products in stock - had uom != ''\n    3. Warehouse UI / Product / Get all sku in stock - had uom\n    4. Warehouse UI / Product / Get product stock summary\n    5. Sổ kho / Get po detail list\n    6. Sổ kho / Get po summary\n    7. Sổ nhập hàng / Get list import po (type = in)\n    8. Contact / Get list contact\n    9. Contact / Get contact's dept amount\n    10. Get payment_source_id\n3. Create inbound to increase products in stock (uom gốc)\n4. Check info:\n    1. Sổ nhập hàng / Check list import po => increase 1\n    2. Sổ nhập hàng / Check new import po detail\n    3. Sổ kho / Check po detail list => increase total items\n    4. Sổ kho / Check po summary\n    5. ProductUI / Get all products => check\n    6. Warehouse UI / Product / Get all products in stock => check\n    7. Warehouse UI / Product / Get product stock summary => check\n    8. Contact / Check contact's dept amount\n5. Create inbound to increase products in stock (uom != uom gốc)\n6. Check info:\n    1. Sổ nhập hàng / Check list import po => increase 1\n    2. Sổ nhập hàng / Check new import po detail\n    3. Sổ kho / Check po detail list => increase total items\n    4. Sổ kho / Check po summary\n    5. ProductUI / Get all products => check\n    6. Warehouse UI / Product / Get all products in stock => check\n    7. Warehouse UI / Product / Get product stock summary => check\n    8. Contact / Check contact's dept amount\n\nNote: will handle case 5, 6 laster",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"_exporter_id": "282640"
+	},
+	"item": [
+		{
+			"name": "Auth",
+			"item": [
+				{
+					"name": "verify_phone_number",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"/**",
+									" * currently, manual to create account pwd & use charles to get it",
+									" * default pwd created: 21112007 (prod with default account & no need pwd)",
+									" */",
+									"",
+									"let phone_number = pm.environment.get(\"SER-phone_number\");",
+									"console.log(\"--- Start Testsuite 87 ---\");",
+									"let testcase = 1;",
+									"",
+									"console.log(\"Testcase: \" + testcase);",
+									"console.log(\"login with phone_number: \" + phone_number);",
+									"",
+									"pm.environment.set(\"C-phone_number\",phone_number);",
+									"pm.environment.set(\"C-testcase\",testcase);"
+								],
+								"type": "text/javascript"
+							}
+						},
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"if(pm.response.code == 200){",
+									"    let jsData = pm.response.json();",
+									"",
+									"    if(jsData.data.is_existed && jsData.data.has_password){",
+									"        postman.setNextRequest(\"login_with_pwd\");",
+									"    } else if(jsData.data.is_existed) {",
+									"        console.log(\"This account doesn't create pwd, please manual create!!!\");",
+									"        postman.setNextRequest(null);",
+									"    } else {",
+									"        console.log(\"Error:\", JSON.stringify(jsData));",
+									"        console.log(\"THIS ACCOUNT IS NOT EXISTED IN SYSTEM, WILL MANUAL CREATE IT\");",
+									"        postman.setNextRequest(null);",
+									"    }",
+									"} else {",
+									"    console.log(\"Error, end test\");",
+									"    postman.setNextRequest(null);",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n\t\"phone_number\": \"{{C-phone_number}}\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{sbh_base_url}}/finan-user/api/v1/auth/account/verify",
+							"host": [
+								"{{sbh_base_url}}"
+							],
+							"path": [
+								"finan-user",
+								"api",
+								"v1",
+								"auth",
+								"account",
+								"verify"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "login_with_pwd",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"// let crypto = require('crypto-js');",
+									"",
+									"// const algorithm = \"aes-256-gcm\";",
+									"// const IV_LEN = 12;",
+									"// const AUTH_TAG_LEN = 16;",
+									"// const SECRET_KEY = \"7dQ0HwRI5okvwAK0WzxaW6ABFncjeu1E\";",
+									"",
+									"// function encrypt(message) {",
+									"//   const iv = Buffer.from(crypto.randomBytes(IV_LEN));",
+									"//   const cipher = crypto.createCipheriv(algorithm, SECRET_KEY, iv, {",
+									"//     authTagLength: AUTH_TAG_LEN,",
+									"//   });",
+									"//   const encryptedData = Buffer.concat([cipher.update(message), cipher.final()]);",
+									"//   const authTag = cipher.getAuthTag();",
+									"//   const raw = Buffer.concat([iv, encryptedData, authTag]).toString(\"hex\");",
+									"//   return raw;",
+									"// }",
+									"",
+									"// const pwd = \"21112007\";",
+									"// // var superSecretEncrypted = CryptoJS.AES.encrypt(pwd, SECRET_KEY);",
+									"",
+									"// let pwd_enc = encrypt(pwd);",
+									"// console.log(\"pwd_enc: \" + pwd_enc);"
+								],
+								"type": "text/javascript"
+							}
+						},
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"if(pm.response.code == 200){",
+									"    let jsData = pm.response.json();",
+									"    // debug",
+									"    // console.log(JSON.stringify(jsData));",
+									"",
+									"    let business_id = null;",
+									"    try{",
+									"        business_id = jsData.data.business_info.list_business[0].business_id;",
+									"    } catch{",
+									"        console.log(\"This is new user, must create business_id\");",
+									"    }",
+									"",
+									"    let userToken = jsData.data.token;",
+									"    pm.environment.set(\"C-userToken\",userToken);",
+									"",
+									"    if(business_id == null){",
+									"        console.log(\"This user don't have store, please check & use another account\");",
+									"        ",
+									"        postman.setNextRequest(null);",
+									"    } else {",
+									"        let userRefreshToken = jsData.data.refresh_token;",
+									"",
+									"        let userInfo = {",
+									"            \"role_name\":jsData.data.business_info.current_role.role_name,",
+									"            \"is_owner\":jsData.data.business_info.current_role.is_owner,",
+									"            \"user_name\":jsData.data.business_info.list_business[0].user_name,",
+									"            \"business_id\":business_id",
+									"        }",
+									"",
+									"        // show log",
+									"        // console.log(\"userToken:\",userToken);",
+									"        // console.log(\"userRefreshToken:\",userRefreshToken);",
+									"        console.log(\"userInfo:\",JSON.stringify(userInfo));",
+									"",
+									"        pm.environment.set(\"C-userRefreshToken\",userRefreshToken);",
+									"        pm.environment.set(\"C-userInfo\",userInfo);",
+									"        pm.environment.set(\"C-business_id\",business_id);",
+									"",
+									"        let testcase = pm.environment.get(\"C-testcase\");",
+									"        testcase++;",
+									"        pm.environment.set(\"C-testcase\",testcase);",
+									"        postman.setNextRequest(\"seller_view_list_product\");",
+									"    }",
+									"} else {",
+									"    console.log(\"Can't get Token, end test\");",
+									"",
+									"    // debug",
+									"    let jsData = pm.response.json();",
+									"    console.log(\"data:\",JSON.stringify(jsData));",
+									"",
+									"    postman.setNextRequest(null);",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n\t\"phone_number\": \"{{C-phone_number}}\",\n\t\"pwd\": \"{{pwd}}\",\n\t\"platform\": \"gtapp\",\n\t\"device_id\": \"C9102FC6-466C-4980-B795-A91A2FD7F97F\",\n\t\"app_version\": \"{{x-current-version}}\",\n\t\"device_name\": \"iPhone\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{sbh_base_url}}/finan-user/api/v1/auth/account/login",
+							"host": [
+								"{{sbh_base_url}}"
+							],
+							"path": [
+								"finan-user",
+								"api",
+								"v1",
+								"auth",
+								"account",
+								"login"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Product UI",
+			"item": [
+				{
+					"name": "seller_view_list_product",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"let testcase = pm.environment.get(\"C-testcase\");",
+									"console.log(\"Testcase: \" + testcase);",
+									"",
+									"let page = pm.environment.get(\"C-page\");",
+									"",
+									"if(!page){",
+									"    page = 1;",
+									"}",
+									"pm.environment.set(\"C-page\",page);",
+									"",
+									"let page_size = 300;",
+									"pm.environment.set(\"C-page_size\",page_size);"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						},
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"if(pm.response.code == 200){",
+									"    let jsData = JSON.parse(responseBody);",
+									"    let testcase = pm.environment.get(\"C-testcase\");",
+									"    let total_pages = jsData.meta.total_pages;",
+									"    let page = pm.environment.get(\"C-page\");",
+									"",
+									"    let product_list, old_product_list;",
+									"    switch(testcase){",
+									"        case 2:",
+									"            product_list = pm.environment.get(\"C-product_list\");",
+									"            if(!product_list){",
+									"                product_list = [];",
+									"            }",
+									"            break;",
+									"        case 4:",
+									"            old_product_list = pm.environment.get(\"C-old_product_list\");",
+									"            if(!old_product_list){",
+									"                old_product_list = pm.environment.get(\"C-product_list\");",
+									"                pm.environment.unset(\"C-product_list\");",
+									"                pm.environment.set(\"C-old_product_list\",old_product_list);",
+									"            }",
+									"",
+									"            product_list = pm.environment.get(\"C-product_list\");",
+									"            if(!product_list){",
+									"                product_list = [];",
+									"            }",
+									"            break;",
+									"        default:",
+									"            console.log(\"Missing flow\");",
+									"            break;",
+									"    }",
+									"",
+									"    for(let item in jsData.data){",
+									"        // console.log(\"debug 1\");",
+									"        if(\"list_sku_uom\" in jsData.data[item].list_sku[0]){",
+									"            // console.log(\"debug 2\");",
+									"            let list_sku = [];",
+									"            for(let i in jsData.data[item].list_sku){",
+									"                // console.log(\"debug 3\");",
+									"                list_sku[list_sku.length] = {",
+									"                    \"sku_id\":jsData.data[item].list_sku[i].id,",
+									"                    \"product_id\":jsData.data[item].list_sku[i].product_id,",
+									"                    \"sku_code\":jsData.data[item].list_sku[i].sku_code,",
+									"                    \"normal_price\":jsData.data[item].list_sku[i].normal_price,",
+									"                    \"historical_cost\":jsData.data[item].list_sku[i].historical_cost,",
+									"                    \"sku_type\":jsData.data[item].list_sku[i].sku_type,",
+									"                    \"uom\":jsData.data[item].list_sku[i].uom,",
+									"                    \"list_sku_uom\":jsData.data[item].list_sku[i].list_sku_uom,",
+									"                    \"name\":jsData.data[item].list_sku[i].name,",
+									"                    \"can_pick_quantity\":jsData.data[item].list_sku[i].can_pick_quantity,",
+									"                    \"total_quantity\":jsData.data[item].list_sku[i].total_quantity,",
+									"                    \"is_active\":jsData.data[item].list_sku[i].is_active",
+									"                }",
+									"            }",
+									"",
+									"            product_list[product_list.length] = {",
+									"                \"product_id\":jsData.data[item].id,",
+									"                \"product_name\":jsData.data[item].name,",
+									"                \"product_code\":jsData.data[item].product_code,",
+									"                \"product_type\":jsData.data[item].product_type,",
+									"                \"type\":jsData.data[item].type,",
+									"                \"can_pick_quantity\":jsData.data[item].can_pick_quantity,",
+									"                \"total_quantity\":jsData.data[item].total_quantity,",
+									"                \"list_sku\":list_sku",
+									"            }",
+									"        }",
+									"    }",
+									"    // console.log(\"product_list: \", product_list);",
+									"    pm.environment.set(\"C-product_list\",product_list);",
+									"",
+									"    if(page >= total_pages){",
+									"        // must clear page & page_size",
+									"        pm.environment.unset(\"C-page\");",
+									"        pm.environment.unset(\"C-page_size\");",
+									"",
+									"        console.log(\"Total products had list_sku_uom: \" + product_list.length);",
+									"",
+									"        switch(testcase){",
+									"            case 2:",
+									"                let total_sku = 0;",
+									"                for(let i in product_list){",
+									"                    if(product_list[i].list_sku.length > 0){",
+									"                        for(let j in product_list[i].list_sku){",
+									"                            if(product_list[i].list_sku[j].is_active){",
+									"                                total_sku++;",
+									"                            } else {",
+									"                                console.log(\"This sku is hidden - \" + product_list[i].list_sku[j].name);",
+									"                            }",
+									"                        }",
+									"                    } else {",
+									"                        console.log(\"This product don't have sku - \" + product_list[i].product_name);",
+									"                        total_sku++;",
+									"                    }",
+									"                }",
+									"                console.log(\"Total sku: \" + total_sku);",
+									"",
+									"                postman.setNextRequest(\"seller_view_list_products_in_stock\"); // seller_view_list_products_in_stock",
+									"                break;",
+									"            case 4:",
+									"                let list_sku_in_stock = pm.environment.get(\"C-list_sku_in_stock\");",
+									"                let list_rand_product = pm.environment.get(\"C-list_rand_product\");",
+									"",
+									"                // check later",
+									"                ",
+									"                postman.setNextRequest(\"seller_view_list_products_in_stock\"); // seller_view_list_products_in_stock",
+									"            default:",
+									"                console.log(\"Missing flow, end test\");",
+									"                postman.setNextRequest(null);",
+									"                break;",
+									"        }",
+									"    } else {",
+									"        page++;",
+									"        pm.environment.set(\"C-page\",page);",
+									"",
+									"        console.log(\"view next page (\" + page + \") to get more products\");",
+									"        postman.setNextRequest(\"seller_view_list_product\");",
+									"    }",
+									"} else {",
+									"    console.log(\"Can't get list product, end test\");",
+									"    postman.setNextRequest(null);",
+									"}"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{C-userToken}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{sbh_base_url}}/finan-product/api/v2/product/seller/get-list?business_id={{C-business_id}}&page={{C-page}}&page_size={{C-page_size}}",
+							"host": [
+								"{{sbh_base_url}}"
+							],
+							"path": [
+								"finan-product",
+								"api",
+								"v2",
+								"product",
+								"seller",
+								"get-list"
+							],
+							"query": [
+								{
+									"key": "business_id",
+									"value": "{{C-business_id}}"
+								},
+								{
+									"key": "page",
+									"value": "{{C-page}}"
+								},
+								{
+									"key": "page_size",
+									"value": "{{C-page_size}}"
+								},
+								{
+									"key": "update_after",
+									"value": "2023-06-30T03%3A29%3A24Z",
+									"disabled": true
+								}
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Warehouse UI",
+			"item": [
+				{
+					"name": "Product",
+					"item": [
+						{
+							"name": "seller_view_list_products_in_stock",
+							"event": [
+								{
+									"listen": "prerequest",
+									"script": {
+										"exec": [
+											"let testcase = pm.environment.get(\"C-testcase\");",
+											"console.log(\"Testcase: \" + testcase);",
+											"",
+											"let page = pm.environment.get(\"C-page\");",
+											"",
+											"if(!page){",
+											"    page = 1;",
+											"}",
+											"pm.environment.set(\"C-page\",page);",
+											"",
+											"let page_size = 300;",
+											"pm.environment.set(\"C-page_size\",page_size);"
+										],
+										"type": "text/javascript",
+										"packages": {}
+									}
+								},
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											"pm.test(\"Status code is 200\", function () {",
+											"    pm.response.to.have.status(200);",
+											"});",
+											"",
+											"if(pm.response.code == 200){",
+											"    let jsData = JSON.parse(responseBody);",
+											"    let testcase = pm.environment.get(\"C-testcase\");",
+											"    let total_pages = jsData.meta.total_pages;",
+											"    let page = pm.environment.get(\"C-page\");",
+											"",
+											"    let list_sku_in_stock, old_list_sku_in_stock;",
+											"    switch(testcase){",
+											"        case 2:",
+											"            list_sku_in_stock = pm.environment.get(\"C-list_sku_in_stock\");",
+											"            if(!list_sku_in_stock){",
+											"                list_sku_in_stock = [];",
+											"            }",
+											"            break;",
+											"        case 4: case 6:",
+											"            old_list_sku_in_stock = pm.environment.get(\"C-old_list_sku_in_stock\");",
+											"            if(!old_list_sku_in_stock){",
+											"                old_list_sku_in_stock = pm.environment.get(\"C-list_sku_in_stock\");",
+											"                pm.environment.unset(\"C-list_sku_in_stock\");",
+											"                pm.environment.set(\"C-old_list_sku_in_stock\",old_list_sku_in_stock);",
+											"            }",
+											"",
+											"            list_sku_in_stock = pm.environment.get(\"C-list_sku_in_stock\");",
+											"            if(!list_sku_in_stock){",
+											"                list_sku_in_stock = [];",
+											"            }",
+											"            break;",
+											"        default:",
+											"            console.log(\"Missing flow\");",
+											"            break;",
+											"    }",
+											"",
+											"    for(let item in jsData.data){",
+											"        // only get product had list_sku_uom",
+											"        // if(!jsData.data[item].type.includes(\"non_stock\")){",
+											"        if(jsData.data[item].uom != \"\"){",
+											"            list_sku_in_stock[list_sku_in_stock.length] = {",
+											"                \"sku_id\":jsData.data[item].id,",
+											"                \"business_id\":jsData.data[item].business_id,",
+											"                \"product_id\":jsData.data[item].product_id,",
+											"                \"product_name\":jsData.data[item].product_name,",
+											"                \"type\":jsData.data[item].type,",
+											"                \"product_type\":jsData.data[item].product_type,",
+											"                \"sku_name\":jsData.data[item].sku_name,",
+											"                \"sku_code\":jsData.data[item].sku_code,",
+											"                \"uom\":jsData.data[item].uom,",
+											"                \"list_sku_uom\":jsData.data[item].list_sku_uom,",
+											"                \"total_quantity\":jsData.data[item].total_quantity,",
+											"                \"historical_cost\":jsData.data[item].historical_cost,",
+											"                \"normal_price\":jsData.data[item].normal_price,",
+											"                \"can_pick_quantity\":jsData.data[item].can_pick_quantity",
+											"            }",
+											"        } else {",
+											"            // console.log(\"Product name: \" + jsData.data[item].product_name);",
+											"            // console.log(\"- Sku name: \" + jsData.data[item].sku_name);",
+											"            // console.log(\"--- type: \" + jsData.data[item].type);",
+											"            // console.log(\"--- can_pick_quantity: \" + jsData.data[item].can_pick_quantity);",
+											"        }",
+											"    }",
+											"    pm.environment.set(\"C-list_sku_in_stock\",list_sku_in_stock);",
+											"",
+											"    if(page >= total_pages){",
+											"        // must clear page & page_size",
+											"        pm.environment.unset(\"C-page\");",
+											"        pm.environment.unset(\"C-page_size\");",
+											"",
+											"        console.log(\"Total sku has list_sku_uom: \" + list_sku_in_stock.length);",
+											"        // console.log(\"list_sku_in_stock: \" + JSON.stringify(list_sku_in_stock));",
+											"",
+											"        switch(testcase){",
+											"            case 2:",
+											"                if(list_sku_in_stock.length > 0){",
+											"                    postman.setNextRequest(\"seller_view_stock_summary\"); // seller_view_stock_summary",
+											"                } else {",
+											"                    console.log(\"nothing product with uom, please check & retry\");",
+											"                    postman.setNextRequest(null);",
+											"                }",
+											"                break;",
+											"            case 4: case 6:",
+											"                let list_rand_product = pm.environment.get(\"C-list_rand_product\");",
+											"                let checkQuan = true;",
+											"                let count = 0;",
+											"                for(let i in list_sku_in_stock){",
+											"                    for(let j in list_rand_product){",
+											"                        if(old_list_sku_in_stock[list_rand_product[j]].sku_id == list_sku_in_stock[i].sku_id){",
+											"                            count++;",
+											"                            checkQuan = ((old_list_sku_in_stock[list_rand_product[j]].can_pick_quantity + old_list_sku_in_stock[list_rand_product[j]].random_quantity) == list_sku_in_stock[i].can_pick_quantity);",
+											"                            break;",
+											"                        }",
+											"                    }",
+											"                    if(!checkQuan) break;",
+											"                }",
+											"",
+											"                pm.test(\"sku's quantity increase correctly!\", function () {",
+											"                    pm.expect(checkQuan).to.be.true;",
+											"                });",
+											"",
+											"                pm.test(\"checked all sku in po! \" + list_rand_product.length, function () {",
+											"                    pm.expect(count == list_rand_product.length).to.be.true;",
+											"                });",
+											"",
+											"                postman.setNextRequest(\"seller_view_stock_summary\"); // seller_view_stock_summary",
+											"                break;",
+											"            default:",
+											"                console.log(\"Missing flow, end test\");",
+											"                postman.setNextRequest(null);",
+											"                break;",
+											"        }",
+											"    } else {",
+											"        page++;",
+											"        pm.environment.set(\"C-page\",page);",
+											"",
+											"        console.log(\"view next page (\" + page + \") to get more products in stock\");",
+											"        postman.setNextRequest(\"seller_view_list_products_in_stock\");",
+											"    }",
+											"} else {",
+											"    console.log(\"Can't get list product in stock, end test\");",
+											"    postman.setNextRequest(null);",
+											"}"
+										],
+										"type": "text/javascript",
+										"packages": {}
+									}
+								}
+							],
+							"request": {
+								"method": "GET",
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "Bearer {{C-userToken}}",
+										"type": "text"
+									},
+									{
+										"key": "Content-Type",
+										"value": "application/json",
+										"type": "text"
+									}
+								],
+								"url": {
+									"raw": "{{sbh_base_url}}/finan-product/api/v1/product/get-all-product-in-stock?business_id={{C-business_id}}&page={{C-page}}&page_size={{C-page_size}}&search=&sort=&category_id=",
+									"host": [
+										"{{sbh_base_url}}"
+									],
+									"path": [
+										"finan-product",
+										"api",
+										"v1",
+										"product",
+										"get-all-product-in-stock"
+									],
+									"query": [
+										{
+											"key": "business_id",
+											"value": "{{C-business_id}}"
+										},
+										{
+											"key": "page",
+											"value": "{{C-page}}"
+										},
+										{
+											"key": "page_size",
+											"value": "{{C-page_size}}"
+										},
+										{
+											"key": "search",
+											"value": ""
+										},
+										{
+											"key": "sort",
+											"value": "",
+											"description": "tăng dần ASC (array.sort()), giảm dần DESC (array.reverse())"
+										},
+										{
+											"key": "category_id",
+											"value": ""
+										}
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "seller_view_list_skus_in_stock",
+							"event": [
+								{
+									"listen": "prerequest",
+									"script": {
+										"exec": [
+											"/**",
+											" * This API only support to create inbound/outbound po",
+											" */",
+											"",
+											"let testcase = pm.environment.get(\"C-testcase\");",
+											"console.log(\"Testcase: \" + testcase);",
+											"",
+											"let page = pm.environment.get(\"C-page\");",
+											"",
+											"if(!page){",
+											"    page = 1;",
+											"}",
+											"pm.environment.set(\"C-page\",page);",
+											"",
+											"let page_size = 150;",
+											"pm.environment.set(\"C-page_size\",page_size);"
+										],
+										"type": "text/javascript",
+										"packages": {}
+									}
+								},
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											"pm.test(\"currently, Don't call this API\", function () {",
+											"    pm.response.to.have.status(0);",
+											"});",
+											"",
+											"postman.setNextRequest(null);"
+										],
+										"type": "text/javascript",
+										"packages": {}
+									}
+								}
+							],
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{sbh_base_url}}/finan-product/api/v1/product/get-all-sku-stock?business_id=7fbdb218-3758-4a95-9357-bc022d12093e&page={{C-page}}&page_size={{C-page_size}}&search=&sort=null&category_id=",
+									"host": [
+										"{{sbh_base_url}}"
+									],
+									"path": [
+										"finan-product",
+										"api",
+										"v1",
+										"product",
+										"get-all-sku-stock"
+									],
+									"query": [
+										{
+											"key": "business_id",
+											"value": "7fbdb218-3758-4a95-9357-bc022d12093e"
+										},
+										{
+											"key": "page",
+											"value": "{{C-page}}"
+										},
+										{
+											"key": "page_size",
+											"value": "{{C-page_size}}"
+										},
+										{
+											"key": "search",
+											"value": ""
+										},
+										{
+											"key": "sort",
+											"value": "null"
+										},
+										{
+											"key": "category_id",
+											"value": ""
+										}
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "seller_view_stock_summary",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											"pm.test(\"Status code is 200\", function () {",
+											"    pm.response.to.have.status(200);",
+											"});",
+											"",
+											"if(pm.response.code == 200){",
+											"    let jsData = pm.response.json();",
+											"    let prod_summary_obj = jsData.data;",
+											"    let testcase = pm.environment.get(\"C-testcase\");",
+											"    console.log(\"debug: \" + JSON.stringify(jsData));",
+											"    let list_sku_in_stock;",
+											"",
+											"    switch(testcase){",
+											"        case 2:",
+											"            // let list_sku = pm.environment.get(\"C-list_sku\");",
+											"            list_sku_in_stock = pm.environment.get(\"C-list_sku_in_stock\");",
+											"            // let total_quantity = 0, total_amount = 0;",
+											"            // for(let item in list_sku_in_stock){",
+											"            //     total_quantity += list_sku_in_stock[item].can_pick_quantity;",
+											"            //     total_amount += list_sku_in_stock[item].can_pick_quantity*list_sku_in_stock[item].historical_cost;",
+											"            // }",
+											"",
+											"            // check this laster",
+											"            // pm.test(\"total_quantity is \" + total_quantity, function () {",
+											"            //     console.log(\"Expected: \" + total_quantity);",
+											"            //     console.log(\"Actual: \" + jsData.data.total_quantity);",
+											"            //     pm.expect(total_quantity == jsData.data.total_quantity).to.be.true;",
+											"            // });",
+											"",
+											"            // pm.test(\"total_amount is \" + total_amount, function () {",
+											"            //     console.log(\"Expected: \" + total_amount);",
+											"            //     console.log(\"Actual: \" + jsData.data.total_amount);",
+											"            //     pm.expect(total_amount == jsData.data.total_amount).to.be.true;",
+											"            // });",
+											"",
+											"            ",
+											"            pm.environment.set(\"C-prod_summary_obj\",prod_summary_obj);",
+											"",
+											"            postman.setNextRequest(\"seller_view_po_detail_list\"); // seller_view_po_detail_list",
+											"            break;",
+											"        case 4: case 6:",
+											"            let old_prod_summary_obj = pm.environment.get(\"C-prod_summary_obj\");",
+											"            console.log(\"old data: \" + JSON.stringify(old_prod_summary_obj));",
+											"            list_sku_in_stock = pm.environment.get(\"C-old_list_sku_in_stock\");",
+											"",
+											"            let list_rand_product = pm.environment.get(\"C-list_rand_product\");",
+											"            let exp_increase_quan = 0, exp_increase_amount = 0;",
+											"            for(let item in list_rand_product){",
+											"                exp_increase_quan += list_sku_in_stock[list_rand_product[item]].random_quantity;",
+											"                exp_increase_amount += list_sku_in_stock[list_rand_product[item]].random_quantity*list_sku_in_stock[list_rand_product[item]].historical_cost;",
+											"            }",
+											"            console.log(\"exp_increase_quan: \" + exp_increase_quan);",
+											"            console.log(\"exp_increase_amount: \" + exp_increase_amount);",
+											"",
+											"            pm.test(\"total_quantity is \" + (old_prod_summary_obj.total_quantity + exp_increase_quan), function () {",
+											"                console.log(\"Expected: \" + (old_prod_summary_obj.total_quantity + exp_increase_quan));",
+											"                console.log(\"Actual: \" + jsData.data.total_quantity);",
+											"                pm.expect((old_prod_summary_obj.total_quantity + exp_increase_quan) == jsData.data.total_quantity).to.be.true;",
+											"            });",
+											"",
+											"            pm.test(\"total_amount is \" + (old_prod_summary_obj.total_amount + exp_increase_amount), function () {",
+											"                console.log(\"Expected: \" + (old_prod_summary_obj.total_amount + exp_increase_amount));",
+											"                console.log(\"Actual: \" + jsData.data.total_amount);",
+											"                pm.expect((old_prod_summary_obj.total_amount + exp_increase_amount) == jsData.data.total_amount).to.be.true;",
+											"            });",
+											"",
+											"            postman.setNextRequest(\"seller_view_debt_amount\"); //seller_view_debt_amount",
+											"            break;",
+											"        default:",
+											"            console.log(\"Missing flow, end test\");",
+											"            postman.setNextRequest(null);",
+											"            break;",
+											"    }",
+											"} else {",
+											"    console.log(\"Can't get stock summary, end test\");",
+											"    postman.setNextRequest(null);",
+											"}"
+										],
+										"type": "text/javascript"
+									}
+								},
+								{
+									"listen": "prerequest",
+									"script": {
+										"exec": [
+											"let testcase = pm.environment.get(\"C-testcase\");",
+											"console.log(\"Testcase: \" + testcase);"
+										],
+										"type": "text/javascript"
+									}
+								}
+							],
+							"request": {
+								"method": "GET",
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "Bearer {{C-userToken}}",
+										"type": "text"
+									},
+									{
+										"key": "Content-Type",
+										"value": "application/json",
+										"type": "text"
+									}
+								],
+								"url": {
+									"raw": "{{sbh_base_url}}/ms-warehouse-management/api/v2/warehouse/get-summary?business_id={{C-business_id}}",
+									"host": [
+										"{{sbh_base_url}}"
+									],
+									"path": [
+										"ms-warehouse-management",
+										"api",
+										"v2",
+										"warehouse",
+										"get-summary"
+									],
+									"query": [
+										{
+											"key": "business_id",
+											"value": "{{C-business_id}}"
+										}
+									]
+								}
+							},
+							"response": []
+						}
+					]
+				},
+				{
+					"name": "Sổ Kho",
+					"item": [
+						{
+							"name": "seller_view_po_detail_list",
+							"event": [
+								{
+									"listen": "prerequest",
+									"script": {
+										"exec": [
+											"let testcase = pm.environment.get(\"C-testcase\");",
+											"console.log(\"Testcase: \" + testcase);",
+											"",
+											"let page = pm.environment.get(\"C-page\");",
+											"",
+											"if(!page){",
+											"    page = 1;",
+											"}",
+											"pm.environment.set(\"C-page\",page);",
+											"",
+											"let page_size = 50;",
+											"pm.environment.set(\"C-page_size\",page_size);",
+											"",
+											"if(testcase == 2){",
+											"    // lấy full tháng hiện tại",
+											"    let today = new Date();",
+											"    // let firstDay = new Date(today.getFullYear(), today.getMonth(), 1);",
+											"    // let lastDay = new Date(today.getFullYear(), today.getMonth() + 1, 1);",
+											"",
+											"    // lấy full tháng trước",
+											"    // let firstDay = new Date(today.getFullYear(), today.getMonth() - 1, 1);",
+											"    // let lastDay = new Date(today.getFullYear(), today.getMonth(), 1);",
+											"",
+											"    // lấy full ngày hiện tại",
+											"    let firstDay = new Date(today.getFullYear(), today.getMonth(), today.getDate(), 0, 0 ,0, 0);",
+											"    let lastDay = new Date(today.getFullYear(), today.getMonth(), today.getDate(), 23, 59 ,59, 0);",
+											"",
+											"    let start_time= firstDay.toISOString();",
+											"    let end_time= lastDay.toISOString();",
+											"",
+											"    console.log(\"start_time: \" + start_time);",
+											"    console.log(\"end_time: \" + end_time);",
+											"",
+											"    pm.environment.set(\"C-start_time\",start_time);",
+											"    pm.environment.set(\"C-end_time\",end_time);",
+											"} else {",
+											"    console.log(\"start_time: \" + pm.environment.get(\"C-start_time\"));",
+											"    console.log(\"end_time: \" + pm.environment.get(\"C-end_time\"));",
+											"}"
+										],
+										"type": "text/javascript"
+									}
+								},
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											"pm.test(\"Status code is 200\", function () {",
+											"    pm.response.to.have.status(200);",
+											"});",
+											"",
+											"if(pm.response.code == 200){",
+											"    let jsData = JSON.parse(responseBody);",
+											"    let testcase = pm.environment.get(\"C-testcase\");",
+											"    let total_sku_in_po = null;",
+											"    try {",
+											"        total_sku_in_po = jsData.meta.total_rows;",
+											"    } catch {",
+											"        console.log(\"Missing meta\");",
+											"    }",
+											"",
+											"    switch(testcase){",
+											"        case 2:",
+											"            let total_pages = jsData.meta.total_pages;",
+											"            let page = pm.environment.get(\"C-page\");",
+											"",
+											"            let list_sku_po = pm.environment.get(\"C-list_sku_po\");",
+											"            if(!list_sku_po){",
+											"                list_sku_po = [];",
+											"            }",
+											"",
+											"            for(let item in jsData.data){",
+											"                // sku_po can be sku or ingredient - object_type",
+											"                list_sku_po[list_sku_po.length] = {",
+											"                    \"sku_po_id\":jsData.data[item].sku_id,",
+											"                    \"object_type\":jsData.data[item].object_type,",
+											"                    \"sku_info\":jsData.data[item].sku_info,",
+											"                    \"pricing\":jsData.data[item].pricing,",
+											"                    \"quantity\":jsData.data[item].quantity,",
+											"                    \"transaction_type\":jsData.data[item].transaction_type,",
+											"                    \"po_id\":jsData.data[item].po_id,",
+											"                    \"po_code\":jsData.data[item].po_code,",
+											"                    \"type\":jsData.data[item].type,",
+											"                    \"status\":jsData.data[item].status",
+											"                }",
+											"",
+											"                if(jsData.data[item].type == \"stocktake\"){",
+											"                    if(jsData.data[item].status == \"completed\"){",
+											"                        console.log(\"stocktake completed: \" + JSON.stringify(jsData.data[item]));",
+											"                    } else {",
+											"                        // console.log(\"stocktake: \" + JSON.stringify(jsData.data[item]));",
+											"                    }",
+											"                }",
+											"            }",
+											"            pm.environment.set(\"C-list_sku_po\",list_sku_po);",
+											"",
+											"            if(page >= total_pages){",
+											"                // must clear page & page_size",
+											"                pm.environment.unset(\"C-page\");",
+											"                pm.environment.unset(\"C-page_size\");",
+											"",
+											"                pm.test(\"Got total sku po! \" + total_sku_in_po, function () {",
+											"                    pm.environment.set(\"C-total_sku_in_po\",total_sku_in_po);",
+											"                    pm.expect(total_sku_in_po != null).to.be.true;",
+											"                });",
+											"",
+											"                postman.setNextRequest(\"seller_view_po_summary\"); // seller_view_po_summary",
+											"            } else {",
+											"                page++;",
+											"                pm.environment.set(\"C-page\",page);",
+											"",
+											"                console.log(\"view next page (\" + page + \") to get more sku po\");",
+											"                postman.setNextRequest(\"seller_view_po_detail_list\");",
+											"            }",
+											"            break;",
+											"        case 4: case 6:",
+											"            let old_total_sku_in_po = pm.environment.get(\"C-total_sku_in_po\");",
+											"            let list_rand_product = pm.environment.get(\"C-list_rand_product\");",
+											"            let total_increase = list_rand_product.length;",
+											"",
+											"            pm.test(\"total_sku_in_po increase \" + total_increase, function () {",
+											"                pm.expect(total_sku_in_po == (old_total_sku_in_po + total_increase)).to.be.true;",
+											"            });",
+											"",
+											"            // will check detail later",
+											"",
+											"            postman.setNextRequest(\"seller_view_po_summary\"); // seller_view_po_summary",
+											"            break;",
+											"        default:",
+											"            console.log(\"Missing flow, end test\");",
+											"            postman.setNextRequest(null);",
+											"            break;",
+											"    }",
+											"    ",
+											"} else {",
+											"    console.log(\"Can't get list product in stock, end test\");",
+											"    postman.setNextRequest(null);",
+											"}"
+										],
+										"type": "text/javascript"
+									}
+								}
+							],
+							"request": {
+								"method": "GET",
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "Bearer {{C-userToken}}",
+										"type": "text"
+									},
+									{
+										"key": "Content-Type",
+										"value": "application/json",
+										"type": "text"
+									}
+								],
+								"url": {
+									"raw": "{{sbh_base_url}}/ms-warehouse-management/api/v1/po-detail/get-list?business_id={{C-business_id}}&end_time={{C-end_time}}&page={{C-page}}&page_size={{C-page_size}}&search=&sort=created_at desc&start_time={{C-start_time}}",
+									"host": [
+										"{{sbh_base_url}}"
+									],
+									"path": [
+										"ms-warehouse-management",
+										"api",
+										"v1",
+										"po-detail",
+										"get-list"
+									],
+									"query": [
+										{
+											"key": "business_id",
+											"value": "{{C-business_id}}"
+										},
+										{
+											"key": "end_time",
+											"value": "{{C-end_time}}"
+										},
+										{
+											"key": "page",
+											"value": "{{C-page}}"
+										},
+										{
+											"key": "page_size",
+											"value": "{{C-page_size}}"
+										},
+										{
+											"key": "search",
+											"value": "",
+											"description": "=> product_name để show list tồn đầu kỳ, cuối kỳ"
+										},
+										{
+											"key": "sort",
+											"value": "created_at desc"
+										},
+										{
+											"key": "start_time",
+											"value": "{{C-start_time}}"
+										}
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "seller_view_po_summary",
+							"event": [
+								{
+									"listen": "prerequest",
+									"script": {
+										"exec": [
+											"let testcase = pm.environment.get(\"C-testcase\");",
+											"console.log(\"Testcase: \" + testcase);"
+										],
+										"type": "text/javascript"
+									}
+								},
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											"pm.test(\"Status code is 200\", function () {",
+											"    pm.response.to.have.status(200);",
+											"});",
+											"",
+											"if(pm.response.code == 200){",
+											"    const jsData = pm.response.json();",
+											"    let testcase = pm.environment.get(\"C-testcase\");",
+											"    let list_sku_po = pm.environment.get(\"C-list_sku_po\");",
+											"    let sku_po_obj = null;",
+											"    try {",
+											"        sku_po_obj = jsData.data;",
+											"    } catch {",
+											"        console.log(\"Missing data\");",
+											"    }",
+											"",
+											"    switch(testcase){",
+											"        case 2:",
+											"            pm.environment.set(\"C-sku_po_obj\",sku_po_obj);",
+											"",
+											"            let inbound_in_period = 0, outbound_in_period = 0;",
+											"            for(let item in list_sku_po){",
+											"                // đợt BE migrate lại sẽ update default chỉ có lỗi",
+											"                switch(list_sku_po[item].type){",
+											"                    case \"inbound\": // chưa định nghĩa status",
+											"                        if(list_sku_po[item].transaction_type == \"in\"){",
+											"                            inbound_in_period += list_sku_po[item].pricing * list_sku_po[item].quantity;",
+											"                        } else {",
+											"                            console.log(\"Error inbound - \" + list_sku_po[item].po_code);",
+											"                            console.log(\"----- type: \" + list_sku_po[item].type);",
+											"                            console.log(\"----- transaction_type: \" + list_sku_po[item].transaction_type);",
+											"                        }",
+											"                        break;",
+											"                    case \"outbound\": // chưa định nghĩa status",
+											"                        if(list_sku_po[item].transaction_type == \"out\"){",
+											"                            outbound_in_period += list_sku_po[item].pricing * list_sku_po[item].quantity;",
+											"                        } else {",
+											"                            console.log(\"Error outbound - \" + list_sku_po[item].po_code);",
+											"                            console.log(\"----- type: \" + list_sku_po[item].type);",
+											"                            console.log(\"----- transaction_type: \" + list_sku_po[item].transaction_type);",
+											"                        }",
+											"                        break;",
+											"                    case \"stocktake\": // có định nghĩa status",
+											"                        if(list_sku_po[item].transaction_type == \"in\" && list_sku_po[item].status == \"completed\"){",
+											"                            inbound_in_period += list_sku_po[item].pricing * list_sku_po[item].quantity;",
+											"                        } else if(list_sku_po[item].transaction_type == \"out\" && list_sku_po[item].status == \"completed\") {",
+											"                            outbound_in_period += list_sku_po[item].pricing * list_sku_po[item].quantity;",
+											"                        } else {",
+											"                            console.log(\"Pending - \" + list_sku_po[item].po_code);",
+											"                            console.log(\"----- type: \" + list_sku_po[item].type);",
+											"                            console.log(\"----- transaction_type: \" + list_sku_po[item].transaction_type);",
+											"                            console.log(\"----- status: \" + list_sku_po[item].status);",
+											"                        }",
+											"                        break;",
+											"                    case \"other\": // những loại NH/XH kiểu đổi giá SP, change/khởi tạo stock",
+											"                        if(list_sku_po[item].transaction_type == \"in\"){",
+											"                            inbound_in_period += list_sku_po[item].pricing * list_sku_po[item].quantity;",
+											"                        } else if(list_sku_po[item].transaction_type == \"out\") {",
+											"                            outbound_in_period += list_sku_po[item].pricing * list_sku_po[item].quantity;",
+											"                        } else {",
+											"                            console.log(\"Error other - \" + list_sku_po[item].po_code);",
+											"                            console.log(\"----- type: \" + list_sku_po[item].type);",
+											"                            console.log(\"----- transaction_type: \" + list_sku_po[item].transaction_type);",
+											"                            console.log(\"----- status: \" + list_sku_po[item].status);",
+											"                        }",
+											"                        break;",
+											"                    default:",
+											"                        if(list_sku_po[item].transaction_type == \"in\"){",
+											"                            inbound_in_period += list_sku_po[item].pricing * list_sku_po[item].quantity;",
+											"                        } else if(list_sku_po[item].transaction_type == \"out\") {",
+											"                            outbound_in_period += list_sku_po[item].pricing * list_sku_po[item].quantity;",
+											"                        }",
+											"                        // console.log(\"Error Missing - \" + list_sku_po[item].po_code);",
+											"                        // console.log(\"----- type: \" + list_sku_po[item].type);",
+											"                        // console.log(\"----- transaction_type: \" + list_sku_po[item].transaction_type);",
+											"                        // console.log(\"----- status: \" + list_sku_po[item].status);",
+											"                        break;",
+											"                }",
+											"            }",
+											"",
+											"            // inbound_in_period",
+											"            pm.test(\"inbound_in_period is correctly! \" + inbound_in_period, function () {",
+											"                console.log(\"Expected: \" + inbound_in_period);",
+											"                console.log(\"Actual: \" + jsData.data.inbound_in_period);",
+											"                pm.expect(inbound_in_period.toFixed(0) == jsData.data.inbound_in_period.toFixed(0)).to.be.true;",
+											"            });",
+											"",
+											"            // outbound_in_period",
+											"            pm.test(\"outbound_in_period is correctly! \" + outbound_in_period, function () {",
+											"                console.log(\"Expected: \" + outbound_in_period);",
+											"                console.log(\"Actual: \" + jsData.data.outbound_in_period);",
+											"                pm.expect(outbound_in_period.toFixed(0) == jsData.data.outbound_in_period.toFixed(0)).to.be.true;",
+											"            });",
+											"",
+											"            // last_period => get last_period của ngày hôm trước start_time & lưu lại => handle sau",
+											"",
+											"            postman.setNextRequest(\"seller_view_list_import_po\"); // seller_view_list_import_po",
+											"            break;",
+											"        case 4: case 6:",
+											"            let old_sku_po_obj = pm.environment.get(\"C-sku_po_obj\");",
+											"            console.log(\"old_sku_po_obj: \" + JSON.stringify(old_sku_po_obj));",
+											"            console.log(\"sku_po_obj: \" + JSON.stringify(sku_po_obj));",
+											"            // first_period",
+											"            pm.test(\"first_period is nothing happen! \" + old_sku_po_obj.first_period, function () {",
+											"                console.log(\"Expected: \" + old_sku_po_obj.first_period);",
+											"                console.log(\"Actual: \" + jsData.data.first_period);",
+											"                pm.expect(old_sku_po_obj.first_period.toFixed(0) == jsData.data.first_period.toFixed(0)).to.be.true;",
+											"            });",
+											"",
+											"            // outbound_in_period",
+											"            pm.test(\"outbound_in_period is nothing happen! \" + old_sku_po_obj.outbound_in_period, function () {",
+											"                console.log(\"Expected: \" + old_sku_po_obj.outbound_in_period);",
+											"                console.log(\"Actual: \" + jsData.data.outbound_in_period);",
+											"                pm.expect(old_sku_po_obj.outbound_in_period.toFixed(0) == jsData.data.outbound_in_period.toFixed(0)).to.be.true;",
+											"            });",
+											"",
+											"            // inbound_in_period",
+											"            // let inbound_order_obj = pm.environment.get(\"C-inbound_order_obj\");",
+											"            let total_amount = pm.environment.get(\"C-total_amount\");",
+											"            pm.test(\"inbound_in_period is increase \" + total_amount, function () {",
+											"                console.log(\"total_amount: \" + total_amount);",
+											"                console.log(\"Expected: \" + (old_sku_po_obj.inbound_in_period + total_amount).toFixed(0));",
+											"                console.log(\"Actual: \" + jsData.data.inbound_in_period);",
+											"                pm.expect((old_sku_po_obj.inbound_in_period + total_amount).toFixed(0) == jsData.data.inbound_in_period.toFixed(0)).to.be.true;",
+											"            });",
+											"",
+											"            // last_period",
+											"            pm.test(\"last_period is increase \" + total_amount, function () {",
+											"                console.log(\"Expected: \" + (old_sku_po_obj.last_period + total_amount).toFixed(0));",
+											"                console.log(\"Actual: \" + jsData.data.last_period);",
+											"                pm.expect((old_sku_po_obj.last_period + total_amount).toFixed(0) == jsData.data.last_period.toFixed(0)).to.be.true;",
+											"            });",
+											"",
+											"            postman.setNextRequest(\"seller_view_list_products_in_stock\"); // seller_view_list_product, seller_view_list_products_in_stock",
+											"            break;",
+											"        default:",
+											"            break;",
+											"    }",
+											"    ",
+											"} else {",
+											"    console.log(\"Can't get sku po summary, end test\");",
+											"    postman.setNextRequest(null);",
+											"}"
+										],
+										"type": "text/javascript"
+									}
+								}
+							],
+							"request": {
+								"method": "GET",
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "Bearer {{C-userToken}}",
+										"type": "text"
+									},
+									{
+										"key": "Content-Type",
+										"value": "application/json",
+										"type": "text"
+									}
+								],
+								"url": {
+									"raw": "{{sbh_base_url}}/ms-warehouse-management/api/v1/po/get-period-value?business_id={{C-business_id}}&start_time={{C-start_time}}&end_time={{C-end_time}}",
+									"host": [
+										"{{sbh_base_url}}"
+									],
+									"path": [
+										"ms-warehouse-management",
+										"api",
+										"v1",
+										"po",
+										"get-period-value"
+									],
+									"query": [
+										{
+											"key": "business_id",
+											"value": "{{C-business_id}}"
+										},
+										{
+											"key": "start_time",
+											"value": "{{C-start_time}}"
+										},
+										{
+											"key": "end_time",
+											"value": "{{C-end_time}}"
+										}
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "seller_create_an_import_goods",
+							"event": [
+								{
+									"listen": "prerequest",
+									"script": {
+										"exec": [
+											"/**",
+											" * func randNotDupe(min, max, total)",
+											" * total: số lượng random, ko dc nhỏ hơn max-min+1",
+											" * return: array",
+											" */",
+											"function randNotDupe(min, max, total){",
+											"  let arrNum = []; // new empty array",
+											"  let n, p;",
+											"  for (let i = 0; i < total; i++) {",
+											"    do {",
+											"      n = Math.floor(Math.random() * (max - min + 1)) + min;",
+											"      p = arrNum.includes(n);",
+											"      if(!p){",
+											"        arrNum.push(n);",
+											"      }",
+											"    }",
+											"    while(p);",
+											"  }",
+											"  return arrNum;",
+											"} ",
+											"",
+											"//random characters",
+											"function randomChars(length) {",
+											"    var result           = '';",
+											"    var characters       = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';",
+											"    var charactersLength = characters.length;",
+											"    for ( var i = 0; i < length; i++ ) {",
+											"      result += characters.charAt(Math.floor(Math.random() * ",
+											" charactersLength));",
+											"   }",
+											"   return result;",
+											"}",
+											"",
+											"// random number between min and max",
+											"function getRandomInt(min, max) {",
+											"  \treturn Math.floor(Math.random() * (max - min + 1)) + min;",
+											"}",
+											"",
+											"let testcase = pm.environment.get(\"C-testcase\");",
+											"console.log(\"Testcase: \" + testcase);",
+											"",
+											"/**",
+											" * Lấy ngẫu nhiên 1 số sku - quantity ngẫu nhiên",
+											" * is_debit true/false",
+											" */",
+											"let random_quantity, random_uom, total = 0;",
+											"let po_details = [];",
+											"let list_sku_in_stock = pm.environment.get(\"C-list_sku_in_stock\");",
+											"let list_rand_product = randNotDupe(0,list_sku_in_stock.length - 1,getRandomInt(1,3));",
+											"/**",
+											" * Thêm uom for sku",
+											" * => sku.uom => sku gốc",
+											" * => sku.list_sku_uom[].uom & sku.list_sku_uom[].quantity để quy đổi vs sku gốc",
+											" */",
+											"switch(testcase){",
+											"    case 3:",
+											"        for(let i_pro in list_rand_product){",
+											"            random_quantity = getRandomInt(5,10);",
+											"            po_details[po_details.length] = {",
+											"                \"sku_id\":list_sku_in_stock[list_rand_product[i_pro]].sku_id,",
+											"                \"pricing\":list_sku_in_stock[list_rand_product[i_pro]].historical_cost,",
+											"                \"quantity\":random_quantity",
+											"            }",
+											"            list_sku_in_stock[list_rand_product[i_pro]].random_quantity = random_quantity;",
+											"            total += random_quantity*list_sku_in_stock[list_rand_product[i_pro]].historical_cost;",
+											"        }",
+											"        break;",
+											"    case 5:",
+											"        for(let i_pro in list_rand_product){",
+											"            random_quantity = getRandomInt(5,10);",
+											"            random_uom = getRandomInt(0,list_sku_in_stock[list_rand_product[i_pro]].list_sku_uom.length);",
+											"            po_details[po_details.length] = {",
+											"                \"sku_id\":list_sku_in_stock[list_rand_product[i_pro]].sku_id,",
+											"                \"pricing\":list_sku_in_stock[list_rand_product[i_pro]].historical_cost,",
+											"                \"quantity\":random_quantity,",
+											"                \"uom_id\":list_sku_in_stock[list_rand_product[i_pro]].list_sku_uom[random_uom].uom_id,",
+											"            }",
+											"            list_sku_in_stock[list_rand_product[i_pro]].random_quantity = random_quantity;",
+											"            total += random_quantity*list_sku_in_stock[list_rand_product[i_pro]].historical_cost;",
+											"        }",
+											"        break;",
+											"    default:",
+											"        console.log(\"missing flow\");",
+											"        break;",
+											"}",
+											"",
+											"// console.log(\"list_rand_product \" + list_rand_product);",
+											"console.log(\"po_details \" + JSON.stringify(po_details));",
+											"",
+											"/**",
+											" * case 1: is_debit = off (false), buyer_pay = 0 => Chưa Thanh Toán",
+											" * case 2: is_debit = off, buyer_pay = 1~total_amount => Thanh Toán 1 phần & ko ghi nợ",
+											" * case 3: is_debit = off, buyer_pay = total_amount => Đã Thanh toán",
+											" * case 4: is_debit = on (true), buyer_pay = 0 => Chưa Thanh Toán, Đã ghi nợ",
+											" * case 5: is_debit = on, buyer_pay = 1~total_amount => Thanh Toán 1 phần & đã ghi nợ",
+											" * case 6: is_debit = on, buyer_pay = total_amount => ",
+											" */",
+											"let payment_states = [\"paid\",\"un_paid\"]; // \"in_debit\" / \"partial_paid\"",
+											"let is_debit, buyer_pay, payment_state;",
+											"switch(getRandomInt(1,6)){ // getRandomInt(1,6)",
+											"    case 1:",
+											"        is_debit = false;",
+											"        buyer_pay = 0;",
+											"        payment_state = payment_states[getRandomInt(0,payment_states.length - 1)]; // ko quan tâm payment_state",
+											"        break;",
+											"    case 2:",
+											"        is_debit = false;",
+											"        buyer_pay = getRandomInt(10000, (total - 10000));",
+											"        payment_state = \"paid\"; // bắt buộc phải là paid, un_paid sẽ lỗi",
+											"        break;",
+											"    case 3:",
+											"        is_debit = false;",
+											"        buyer_pay = total;",
+											"        payment_state = \"paid\"; // bắt buộc phải là paid, un_paid sẽ lỗi",
+											"        break;",
+											"    case 4:",
+											"        is_debit = true;",
+											"        buyer_pay = 0;",
+											"        payment_state = \"paid\"; // payment_state = paid => ghi 1 dòng thanh toán = 0, ngược lại sẽ ko có",
+											"        break;",
+											"    case 5:",
+											"        is_debit = true;",
+											"        buyer_pay = getRandomInt(10000, (total - 10000));",
+											"        payment_state = \"paid\"; // bắt buộc phải là paid, un_paid sẽ lỗi",
+											"        break;",
+											"    case 6:",
+											"        is_debit = true;",
+											"        buyer_pay = total;",
+											"        payment_state =\"paid\"; // bắt buộc phải là paid, un_paid sẽ lỗi",
+											"        break;",
+											"    default:",
+											"        console.log(\"Missing\");",
+											"        break;",
+											"}",
+											"console.log(\"============================================================================================\");",
+											"console.log(\"is_debit = \" + is_debit + \", buyer_pay = \" + buyer_pay + \", payment_state = \" + payment_state);",
+											"console.log(\"============================================================================================\");",
+											"",
+											"// let is_debit = Math.random() < 0.5;",
+											"// let buyer_pay;",
+											"// if(is_debit){",
+											"//     buyer_pay = getRandomInt(10000, (total - 10000));",
+											"// } else {",
+											"//     buyer_pay = total;",
+											"// }",
+											"",
+											"let payload = {",
+											"\t\"po_type\": \"in\",",
+											"\t\"media\": [],",
+											"\t\"po_details\":po_details,",
+											"\t\"contact_id\":pm.environment.get(\"C-contact_id\"),",
+											"\t\"total_discount\": 0,",
+											"\t\"sur_charge\": 0,",
+											"\t\"business_id\":pm.environment.get(\"C-business_id\"),",
+											"\t\"option\": \"create_po\",",
+											"\t\"note\": \"[API][uom] NH \" + randomChars(8),",
+											"\t\"is_debit\":is_debit,",
+											"\t\"buyer_pay\":buyer_pay,",
+											"\t\"payment_state\": payment_state,",
+											"\t\"payment_source_id\":pm.environment.get(\"C-payment_obj\").payment_source_id,",
+											"\t\"payment_source_name\": \"Tiền mặt\"",
+											"}",
+											"",
+											"console.log(\"payload: \" + JSON.stringify(payload));",
+											"pm.environment.set(\"C-payload\",JSON.stringify(payload));",
+											"",
+											"pm.environment.set(\"C-inbound_order_obj\",payload);",
+											"pm.environment.set(\"C-total_amount\",total);",
+											"pm.environment.set(\"C-list_sku_in_stock\",list_sku_in_stock);",
+											"pm.environment.set(\"C-list_rand_product\",list_rand_product);"
+										],
+										"type": "text/javascript"
+									}
+								},
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											"pm.test(\"Status code is 200\", function () {",
+											"    pm.response.to.have.status(200);",
+											"});",
+											"",
+											"if(pm.response.code == 200){",
+											"    const jsData = pm.response.json();",
+											"    let testcase = pm.environment.get(\"C-testcase\");",
+											"    console.log(\"debug: \" + JSON.stringify(jsData.data));",
+											"    let inbound_order_obj = pm.environment.get(\"C-inbound_order_obj\");",
+											"    let list_sku_in_stock = pm.environment.get(\"C-list_sku_in_stock\");",
+											"    let list_rand_product = pm.environment.get(\"C-list_rand_product\");",
+											"",
+											"    // got po_id, po_code",
+											"    let po_id = null, po_code;",
+											"    try {",
+											"        po_id = jsData.data.id;",
+											"        po_code = jsData.data.po_code;",
+											"    } catch {",
+											"        console.log(\"Missing data\");",
+											"    }",
+											"    pm.test(\"Got po_id!!! \" + po_code, function () {",
+											"        pm.environment.set(\"C-po_id\",po_id);",
+											"        pm.environment.set(\"C-po_code\",po_code);",
+											"        pm.expect(po_id != null).to.be.true;",
+											"    });",
+											"",
+											"    // check",
+											"    // po_type",
+											"    pm.test(\"po_type correctly! \", function () {",
+											"        pm.expect(jsData.data.po_type == \"in\").to.be.true;",
+											"    });",
+											"",
+											"    // note",
+											"    pm.test(\"note correctly! \", function () {",
+											"        pm.expect(jsData.data.note == inbound_order_obj.note).to.be.true;",
+											"    });",
+											"",
+											"    // contact_id",
+											"    pm.test(\"contact_id correctly! \", function () {",
+											"        pm.expect(jsData.data.contact_id == inbound_order_obj.contact_id).to.be.true;",
+											"    });",
+											"",
+											"    // total_items",
+											"    let total_items = list_rand_product.length;",
+											"    pm.test(\"total_items correctly! \" + total_items, function () {",
+											"        pm.expect(jsData.data.total_items == total_items).to.be.true;",
+											"    });",
+											"",
+											"    // total_quantity",
+											"    let total_quantity = 0, total_amount = 0;",
+											"    for(let i in list_sku_in_stock) {",
+											"        if(\"random_quantity\" in list_sku_in_stock[i]){",
+											"            total_quantity += list_sku_in_stock[i].random_quantity;",
+											"            total_amount += list_sku_in_stock[i].random_quantity*list_sku_in_stock[i].historical_cost;",
+											"        }",
+											"    }",
+											"",
+											"    pm.test(\"total_quantity correctly! \" + total_quantity, function () {",
+											"        pm.expect(jsData.data.total_quantity == total_quantity).to.be.true;",
+											"    });",
+											"",
+											"    // po_details",
+											"    let act_po_details = [];",
+											"    for(let act_po_i in jsData.data.po_details){",
+											"        if(jsData.data.po_details[act_po_i].object_type == \"sku\"){",
+											"            act_po_details[act_po_details.length] = {",
+											"                \"sku_id\":jsData.data.po_details[act_po_i].sku_id,",
+											"                \"pricing\":jsData.data.po_details[act_po_i].pricing,",
+											"                \"quantity\":jsData.data.po_details[act_po_i].quantity",
+											"            }",
+											"        }",
+											"    }",
+											"    pm.test(\"po_details correctly!\", function () {",
+											"        console.log(\"Expected: \" + JSON.stringify(inbound_order_obj.po_details));",
+											"        console.log(\"Actual: \" + JSON.stringify(act_po_details));",
+											"        pm.expect(JSON.stringify(act_po_details) == JSON.stringify(inbound_order_obj.po_details)).to.be.true;",
+											"    });",
+											"",
+											"    // total_amount",
+											"    pm.test(\"total_amount correctly! \" + total_amount.toFixed(2), function () {",
+											"        console.log(\"Expected: \" + total_amount.toFixed(2));",
+											"        console.log(\"Actual: \" + jsData.data.total_amount);",
+											"        pm.expect(jsData.data.total_amount == total_amount.toFixed(2)).to.be.true;",
+											"    });",
+											"",
+											"    // payment_purchase_order.amount",
+											"    let payment_purchase_order = null;",
+											"    try {",
+											"        payment_purchase_order = jsData.data.payment_purchase_order[0].amount;",
+											"    } catch {",
+											"        console.log(\"This po don't have payment_purchase_order\");",
+											"    }",
+											"    if(payment_purchase_order != null){",
+											"        pm.test(\"payment_purchase_order.amount correctly! \" + inbound_order_obj.buyer_pay, function () {",
+											"            pm.expect(jsData.data.payment_purchase_order[0].amount == inbound_order_obj.buyer_pay).to.be.true;",
+											"        });",
+											"    }",
+											"",
+											"    // type",
+											"    pm.test(\"type must be inbound\", function () {",
+											"        pm.expect(jsData.data.type == \"inbound\").to.be.true;",
+											"    });",
+											"",
+											"    // is_debit",
+											"    pm.test(\"is_debit must be \" + inbound_order_obj.is_debit, function () {",
+											"        pm.expect(jsData.data.is_debit == inbound_order_obj.is_debit).to.be.true;",
+											"    });",
+											"",
+											"    testcase++;",
+											"    pm.environment.set(\"C-testcase\",testcase);",
+											"    postman.setNextRequest(\"seller_view_list_import_po\"); // seller_view_list_import_po",
+											"} else {",
+											"    console.log(\"Can't create new inbound po, end test\");",
+											"    postman.setNextRequest(null);",
+											"}"
+										],
+										"type": "text/javascript"
+									}
+								}
+							],
+							"request": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "Bearer {{C-userToken}}",
+										"type": "text"
+									},
+									{
+										"key": "Content-Type",
+										"value": "application/json",
+										"type": "text"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{{C-payload}}"
+								},
+								"url": {
+									"raw": "{{sbh_base_url}}/ms-warehouse-management/api/v1/po/create-inbound",
+									"host": [
+										"{{sbh_base_url}}"
+									],
+									"path": [
+										"ms-warehouse-management",
+										"api",
+										"v1",
+										"po",
+										"create-inbound"
+									]
+								}
+							},
+							"response": []
+						}
+					]
+				},
+				{
+					"name": "Sổ nhập hàng",
+					"item": [
+						{
+							"name": "seller_view_list_import_po",
+							"event": [
+								{
+									"listen": "prerequest",
+									"script": {
+										"exec": [
+											"let testcase = pm.environment.get(\"C-testcase\");",
+											"console.log(\"Testcase: \" + testcase);",
+											"",
+											"let payload = {",
+											"\t\"business_id\":pm.environment.get(\"C-business_id\"),",
+											"\t\"page\":1,",
+											"\t\"page_size\":50,",
+											"\t\"search\": null,",
+											"\t\"po_type\": \"in\",",
+											"\t\"option\": \"import\",",
+											"\t\"is_staff\": true,",
+											"\t\"start_time\":pm.environment.get(\"C-start_time\"),",
+											"\t\"end_time\":pm.environment.get(\"C-end_time\"),",
+											"\t\"object_type\": \"sku|ingredient\",",
+											"\t\"payment_state\": \"paid|partial_paid|un_paid\"",
+											"}",
+											"//\" payment_state\": \"paid|in_debit|un_paid\" => paid|partial_paid|un_paid",
+											"",
+											"pm.environment.set(\"C-payload\",JSON.stringify(payload));"
+										],
+										"type": "text/javascript"
+									}
+								},
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											"pm.test(\"Status code is 200\", function () {",
+											"    pm.response.to.have.status(200);",
+											"});",
+											"",
+											"if(pm.response.code == 200){",
+											"    const jsData = pm.response.json();",
+											"    console.log(\"1st po: \" + JSON.stringify(jsData.data[0]));",
+											"    let testcase = pm.environment.get(\"C-testcase\");",
+											"",
+											"    let total_import_po = null;",
+											"    try {",
+											"        total_import_po = jsData.meta.total_rows;",
+											"    } catch {",
+											"        console.log(\"Missing meta\");",
+											"    }",
+											"",
+											"    switch(testcase){",
+											"        case 2:",
+											"            pm.test(\"Got total po \" + total_import_po, function () {",
+											"                pm.expect(total_import_po != null).to.be.true;",
+											"            });",
+											"            pm.environment.set(\"C-total_import_po\",total_import_po);",
+											"",
+											"            postman.setNextRequest(\"seller_view_list_contact\"); // seller_view_list_contact",
+											"            break;",
+											"        case 4: case 6:",
+											"            // check total po",
+											"            let old_total_import_po = pm.environment.get(\"C-total_import_po\");",
+											"            pm.test(\"total inbound po increase 1\", function () {",
+											"                pm.expect(total_import_po == old_total_import_po + 1).to.be.true;",
+											"            });",
+											"",
+											"            // check new po with the same id",
+											"            let po_id = pm.environment.get(\"C-po_id\");",
+											"            let hasNew = false;",
+											"            let act_code, act_is_debit, act_total_amount, act_payment_state;",
+											"            for(let item in jsData.data){",
+											"                if(jsData.data[item].id == po_id){",
+											"                    hasNew = true;",
+											"                    act_code = jsData.data[item].po_code;",
+											"                    act_is_debit = jsData.data[item].is_debit;",
+											"                    act_total_amount = jsData.data[item].total_amount;",
+											"                    act_payment_state = jsData.data[item].payment_state;",
+											"                    break;",
+											"                }",
+											"            }",
+											"            pm.test(\"Had po_id \" + po_id + \" in the 1st list\", function () {",
+											"                pm.expect(hasNew).to.be.true;",
+											"            });",
+											"",
+											"            // check code",
+											"            pm.test(\"po_code correctly!!! \" + pm.environment.get(\"C-po_code\"), function () {",
+											"                pm.expect(act_code == pm.environment.get(\"C-po_code\")).to.be.true;",
+											"            });",
+											"",
+											"            // check is_debit",
+											"            let inbound_order_obj = pm.environment.get(\"C-inbound_order_obj\");",
+											"            pm.test(\"is_debit correctly!!! \" + inbound_order_obj.is_debit, function () {",
+											"                pm.expect(inbound_order_obj.is_debit == act_is_debit).to.be.true;",
+											"            });",
+											"",
+											"            // check total_amount",
+											"            pm.test(\"total_amount correctly!!! \" + pm.environment.get(\"C-total_amount\"), function () {",
+											"                pm.expect(pm.environment.get(\"C-total_amount\") == act_total_amount).to.be.true;",
+											"            });",
+											"",
+											"            /**",
+											"             * check payment_state",
+											"             * = un_paid: Chưa Thanh Toán",
+											"             * = partial_paid: Thanh Toán 1 phần",
+											"             * = paid: Đã Thanh Toán",
+											"             */",
+											"            let exp_payment_state;",
+											"            if(inbound_order_obj.buyer_pay == 0){",
+											"                exp_payment_state = \"un_paid\";",
+											"            } else if(inbound_order_obj.buyer_pay < pm.environment.get(\"C-total_amount\")){",
+											"                exp_payment_state = \"partial_paid\";",
+											"            } else {",
+											"                exp_payment_state = \"paid\";",
+											"            }",
+											"",
+											"            pm.test(\"payment_state correctly!!! \", function () {",
+											"                pm.expect(exp_payment_state == act_payment_state).to.be.true;",
+											"            });",
+											"",
+											"            postman.setNextRequest(\"seller_view_import_po_detail\"); // seller_view_import_po_detail",
+											"            break;",
+											"        default:",
+											"            console.log(\"Missing flow, end test\");",
+											"            postman.setNextRequest(null);",
+											"            break;",
+											"    }",
+											"} else {",
+											"    console.log(\"Can't get po list in today, end test\");",
+											"    postman.setNextRequest(null);",
+											"}"
+										],
+										"type": "text/javascript"
+									}
+								}
+							],
+							"request": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "Bearer {{C-userToken}}",
+										"type": "text"
+									},
+									{
+										"key": "Content-Type",
+										"value": "application/json",
+										"type": "text"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{{C-payload}}"
+								},
+								"url": {
+									"raw": "{{sbh_base_url}}/ms-warehouse-management/api/v1/po/get-list",
+									"host": [
+										"{{sbh_base_url}}"
+									],
+									"path": [
+										"ms-warehouse-management",
+										"api",
+										"v1",
+										"po",
+										"get-list"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "seller_view_import_po_detail",
+							"event": [
+								{
+									"listen": "prerequest",
+									"script": {
+										"exec": [
+											"let testcase = pm.environment.get(\"C-testcase\");",
+											"console.log(\"Testcase: \" + testcase);",
+											"",
+											"/**",
+											" * old: api/v3/purchase-order/get-detail",
+											" * new: /api/v1/po/get-detail",
+											" * note: Sáng - chuyển sang dùng /api/v1/po/get-detail",
+											" */"
+										],
+										"type": "text/javascript"
+									}
+								},
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											"pm.test(\"Status code is 200\", function () {",
+											"    pm.response.to.have.status(200);",
+											"});",
+											"",
+											"if(pm.response.code == 200){",
+											"    let jsData = pm.response.json();",
+											"    // let testcase = pm.environment.get(\"C-testcase\");",
+											"    console.log(\"debug: \" + JSON.stringify(jsData));",
+											"    let inbound_order_obj = pm.environment.get(\"C-inbound_order_obj\");",
+											"    let list_sku_in_stock = pm.environment.get(\"C-list_sku_in_stock\");",
+											"    let list_rand_product = pm.environment.get(\"C-list_rand_product\");",
+											"",
+											"    // check",
+											"    // po_type",
+											"    pm.test(\"po_type correctly! \", function () {",
+											"        pm.expect(jsData.data.po_type == \"in\").to.be.true;",
+											"    });",
+											"",
+											"    // po_code",
+											"    pm.test(\"po_code correctly! \" + pm.environment.get(\"C-po_code\"), function () {",
+											"        pm.expect(jsData.data.po_code == pm.environment.get(\"C-po_code\")).to.be.true;",
+											"    });",
+											"",
+											"    // is_debit",
+											"    pm.test(\"is_debit must be \" + inbound_order_obj.is_debit, function () {",
+											"        pm.expect(jsData.data.is_debit == inbound_order_obj.is_debit).to.be.true;",
+											"    });",
+											"",
+											"    // note",
+											"    pm.test(\"note correctly! \", function () {",
+											"        pm.expect(jsData.data.note == inbound_order_obj.note).to.be.true;",
+											"    });",
+											"",
+											"    // contact_id",
+											"    pm.test(\"contact_id correctly! \", function () {",
+											"        pm.expect(jsData.data.contact_info.id == inbound_order_obj.contact_id).to.be.true;",
+											"    });",
+											"",
+											"    // total_items",
+											"    let total_items = list_rand_product.length;",
+											"    pm.test(\"total_items correctly! \" + total_items, function () {",
+											"        pm.expect(jsData.data.total_items == total_items).to.be.true;",
+											"    });",
+											"",
+											"    // total_quantity",
+											"    let total_quantity = 0, total_amount = 0;",
+											"    for(let i in list_sku_in_stock) {",
+											"        if(\"random_quantity\" in list_sku_in_stock[i]){",
+											"            total_quantity += list_sku_in_stock[i].random_quantity;",
+											"            total_amount += list_sku_in_stock[i].random_quantity*list_sku_in_stock[i].historical_cost;",
+											"        }",
+											"    }",
+											"",
+											"    pm.test(\"total_quantity correctly! \" + total_quantity, function () {",
+											"        pm.expect(jsData.data.total_quantity == total_quantity).to.be.true;",
+											"    });",
+											"",
+											"    // po_details",
+											"    let act_po_details = [];",
+											"    for(let act_po_i in jsData.data.list_item){",
+											"        act_po_details[act_po_details.length] = {",
+											"            \"sku_id\":jsData.data.list_item[act_po_i].id,",
+											"            \"pricing\":jsData.data.list_item[act_po_i].pricing,",
+											"            \"quantity\":jsData.data.list_item[act_po_i].quantity",
+											"        }",
+											"    }",
+											"    pm.test(\"po_details sort correctly!\", function () {",
+											"        console.log(\"Expected: \" + JSON.stringify(inbound_order_obj.po_details));",
+											"        console.log(\"Actual: \" + JSON.stringify(act_po_details));",
+											"        pm.expect(JSON.stringify(act_po_details) == JSON.stringify(inbound_order_obj.po_details)).to.be.true;",
+											"    });",
+											"    pm.test(\"po_details correctly!\", function () {",
+											"        let exp_po_details = inbound_order_obj.po_details;",
+											"        exp_po_details = exp_po_details.sort((a, b) => {",
+											"            const nameA = a.sku_id;",
+											"            const nameB = b.sku_id;",
+											"            if (nameA < nameB) {",
+											"                return -1;",
+											"            }",
+											"            if (nameA > nameB) {",
+											"                return 1;",
+											"            }",
+											"            return 0;",
+											"            });",
+											"        console.log(\"Expected: \" + JSON.stringify(inbound_order_obj.po_details));",
+											"        console.log(\"Actual: \" + JSON.stringify(act_po_details));",
+											"        pm.expect(JSON.stringify(act_po_details) == JSON.stringify(exp_po_details)).to.be.true;",
+											"    });",
+											"",
+											"    // total_amount",
+											"    pm.test(\"total_amount correctly! \" + total_amount, function () {",
+											"        pm.expect(jsData.data.total_amount == total_amount).to.be.true;",
+											"    });",
+											"",
+											"    // payment_purchase_order.amount",
+											"    let payment_purchase_order = null;",
+											"    try {",
+											"        payment_purchase_order = jsData.data.payment_purchase_order[0].amount;",
+											"    } catch {",
+											"        console.log(\"This po don't have payment_purchase_order\");",
+											"    }",
+											"    if(payment_purchase_order != null){",
+											"        pm.test(\"payment_purchase_order.amount correctly! \" + inbound_order_obj.buyer_pay, function () {",
+											"            pm.expect(jsData.data.payment_purchase_order[0].amount == inbound_order_obj.buyer_pay).to.be.true;",
+											"        });",
+											"    }",
+											"",
+											"    postman.setNextRequest(\"seller_view_po_detail_list\"); // seller_view_po_detail_list",
+											"} else {",
+											"    console.log(\"Can't get po detail, end test\");",
+											"    postman.setNextRequest(null);",
+											"}"
+										],
+										"type": "text/javascript"
+									}
+								}
+							],
+							"request": {
+								"method": "GET",
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "Bearer {{C-userToken}}",
+										"type": "text"
+									},
+									{
+										"key": "Content-Type",
+										"value": "application/json",
+										"type": "text"
+									}
+								],
+								"url": {
+									"raw": "{{sbh_base_url}}/ms-warehouse-management/api/v3/purchase-order/get-detail?id={{C-po_id}}",
+									"host": [
+										"{{sbh_base_url}}"
+									],
+									"path": [
+										"ms-warehouse-management",
+										"api",
+										"v3",
+										"purchase-order",
+										"get-detail"
+									],
+									"query": [
+										{
+											"key": "id",
+											"value": "{{C-po_id}}"
+										}
+									]
+								}
+							},
+							"response": []
+						}
+					]
+				}
+			]
+		},
+		{
+			"name": "Contact",
+			"item": [
+				{
+					"name": "seller_view_list_contact",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"let testcase = pm.environment.get(\"C-testcase\");",
+									"console.log(\"Testcase: \" + testcase);",
+									"",
+									"let page = pm.environment.get(\"C-page\");",
+									"",
+									"if(!page){",
+									"    page = 1;",
+									"}",
+									"pm.environment.set(\"C-page\",page);",
+									"console.log(\"page: \" + page);",
+									"",
+									"let page_size = 50;",
+									"pm.environment.set(\"C-page_size\",page_size);"
+								],
+								"type": "text/javascript"
+							}
+						},
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"if(pm.response.code == 200){",
+									"    let jsData = JSON.parse(responseBody);",
+									"    let testcase = pm.environment.get(\"C-testcase\");",
+									"    let total_pages = jsData.meta.total_pages;",
+									"    let page = pm.environment.get(\"C-page\");",
+									"",
+									"    let list_contact = pm.environment.get(\"C-list_contact\");",
+									"    if(!list_contact){",
+									"        list_contact = [];",
+									"    }",
+									"",
+									"    for(let item in jsData.data){",
+									"        if(jsData.data[item].debt_amount == \"null\"){",
+									"            list_contact[list_contact.length] = {",
+									"                \"contact_id\":jsData.data[item].id,",
+									"                \"name\":jsData.data[item].name,",
+									"                \"phone_number\":jsData.data[item].phone_number,",
+									"                \"is_expired\":jsData.data[item].is_expired,",
+									"                \"debt_amount\":0,",
+									"                \"option\":jsData.data[item].option,",
+									"                \"customer_point\":jsData.data[item].customer_point,",
+									"                \"state\":jsData.data[item].state,",
+									"                \"last_order\":jsData.data[item].last_order",
+									"            }",
+									"        } else {",
+									"            list_contact[list_contact.length] = {",
+									"                \"contact_id\":jsData.data[item].id,",
+									"                \"name\":jsData.data[item].name,",
+									"                \"phone_number\":jsData.data[item].phone_number,",
+									"                \"is_expired\":jsData.data[item].is_expired,",
+									"                \"debt_amount\":jsData.data[item].debt_amount,",
+									"                \"option\":jsData.data[item].option,",
+									"                \"customer_point\":jsData.data[item].customer_point,",
+									"                \"state\":jsData.data[item].state,",
+									"                \"last_order\":jsData.data[item].last_order",
+									"            }",
+									"        }",
+									"    }",
+									"    pm.environment.set(\"C-list_contact\",list_contact);",
+									"",
+									"    if(page >= total_pages){",
+									"        // must clear page & page_size",
+									"        pm.environment.unset(\"C-page\");",
+									"        pm.environment.unset(\"C-page_size\");",
+									"",
+									"        let contact_obj = pm.environment.get(\"C-contact_obj\");",
+									"        let inbound_order_obj = pm.environment.get(\"C-inbound_order_obj\");",
+									"        let act_debt_amount, exp_debt_amount;",
+									"        switch(testcase){",
+									"            case 2:",
+									"                pm.test(\"Got all contact! \" + list_contact.length, function () {",
+									"                    pm.environment.set(\"C-list_contact\",list_contact);",
+									"                    pm.expect(list_contact.length > 0).to.be.true;",
+									"                });",
+									"",
+									"                postman.setNextRequest(\"seller_view_debt_amount\"); // seller_view_debt_amount",
+									"                break;",
+									"            case 4:",
+									"                console.log(\"contact_obj: \" + JSON.stringify(contact_obj))",
+									"                // console.log(\"list_contact: \" + JSON.stringify(list_contact))",
+									"                for(let item in list_contact){",
+									"                    if(list_contact[item].contact_id == contact_obj.contact_id){",
+									"                        if(inbound_order_obj.is_debit){",
+									"                            act_debt_amount = list_contact[item].debt_amount;",
+									"                            exp_debt_amount = contact_obj.debt_amount - (pm.environment.get(\"C-total_amount\") - inbound_order_obj.buyer_pay);",
+									"                            console.log(\"debt_amount before: \" + contact_obj.debt_amount);",
+									"                            console.log(\"total_amount: \" + pm.environment.get(\"C-total_amount\"));",
+									"                            console.log(\"buyer_pay: \" + inbound_order_obj.buyer_pay);",
+									"                            // if(contact_obj.option == \"in\"){",
+									"                            //     check_debt_amount = ((list_contact[item].debt_amount + pm.environment.get(\"C-total_amount\") - inbound_order_obj.buyer_pay) == list_contact[item].debt_amount);",
+									"                            // } else {",
+									"                            //     check_debt_amount",
+									"                            // }",
+									"                        } else {",
+									"                            act_debt_amount = list_contact[item].debt_amount;",
+									"                            exp_debt_amount = contact_obj.debt_amount;",
+									"                        }",
+									"                        break;",
+									"                    }",
+									"                }",
+									"",
+									"                console.log(\"is_debit: \" + inbound_order_obj.is_debit);",
+									"                pm.test(\"debt_amount is correctly! \", function () {",
+									"                    console.log(\"Expected: \" + exp_debt_amount);",
+									"                    console.log(\"Actual: \" + act_debt_amount);",
+									"                    pm.expect(act_debt_amount.toFixed(0) == exp_debt_amount.toFixed(0)).to.be.true;",
+									"                });",
+									"",
+									"                testcase++;",
+									"                pm.environment.set(\"C-testcase\",testcase);",
+									"                postman.setNextRequest(\"seller_create_an_import_goods\"); // seller_create_an_import_goods",
+									"                break;",
+									"            case 4:",
+									"                console.log(\"contact_obj: \" + JSON.stringify(contact_obj))",
+									"                // console.log(\"list_contact: \" + JSON.stringify(list_contact))",
+									"                for(let item in list_contact){",
+									"                    if(list_contact[item].contact_id == contact_obj.contact_id){",
+									"                        if(inbound_order_obj.is_debit){",
+									"                            act_debt_amount = list_contact[item].debt_amount;",
+									"                            exp_debt_amount = contact_obj.debt_amount - (pm.environment.get(\"C-total_amount\") - inbound_order_obj.buyer_pay);",
+									"                            console.log(\"debt_amount before: \" + contact_obj.debt_amount);",
+									"                            console.log(\"total_amount: \" + pm.environment.get(\"C-total_amount\"));",
+									"                            console.log(\"buyer_pay: \" + inbound_order_obj.buyer_pay);",
+									"                            // if(contact_obj.option == \"in\"){",
+									"                            //     check_debt_amount = ((list_contact[item].debt_amount + pm.environment.get(\"C-total_amount\") - inbound_order_obj.buyer_pay) == list_contact[item].debt_amount);",
+									"                            // } else {",
+									"                            //     check_debt_amount",
+									"                            // }",
+									"                        } else {",
+									"                            act_debt_amount = list_contact[item].debt_amount;",
+									"                            exp_debt_amount = contact_obj.debt_amount;",
+									"                        }",
+									"                        break;",
+									"                    }",
+									"                }",
+									"",
+									"                console.log(\"is_debit: \" + inbound_order_obj.is_debit);",
+									"                pm.test(\"debt_amount is correctly! \", function () {",
+									"                    console.log(\"Expected: \" + exp_debt_amount);",
+									"                    console.log(\"Actual: \" + act_debt_amount);",
+									"                    pm.expect(act_debt_amount.toFixed(0) == exp_debt_amount.toFixed(0)).to.be.true;",
+									"                });",
+									"",
+									"                console.log(\"--- End Testsuite 87 ---\");",
+									"                postman.setNextRequest(null);",
+									"                break;",
+									"            default:",
+									"                console.log(\"Missing flow, end test\");",
+									"                postman.setNextRequest(null);",
+									"                break;",
+									"        }",
+									"    } else {",
+									"        page++;",
+									"        pm.environment.set(\"C-page\",page);",
+									"",
+									"        console.log(\"view next page (\" + page + \") to get more contact\");",
+									"        postman.setNextRequest(\"seller_view_list_contact\");",
+									"    }",
+									"} else {",
+									"    console.log(\"Can't get list contact, end test\");",
+									"    postman.setNextRequest(null);",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{C-userToken}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{sbh_base_url}}/finan-business/api/v1/contact/get-list?type=&search=&business_id={{C-business_id}}&page={{C-page}}&page_size={{C-page_size}}&sort=&option=&state=waiting_confirm,delivering&is_active=true",
+							"host": [
+								"{{sbh_base_url}}"
+							],
+							"path": [
+								"finan-business",
+								"api",
+								"v1",
+								"contact",
+								"get-list"
+							],
+							"query": [
+								{
+									"key": "type",
+									"value": ""
+								},
+								{
+									"key": "search",
+									"value": ""
+								},
+								{
+									"key": "business_id",
+									"value": "{{C-business_id}}"
+								},
+								{
+									"key": "page",
+									"value": "{{C-page}}"
+								},
+								{
+									"key": "page_size",
+									"value": "{{C-page_size}}"
+								},
+								{
+									"key": "sort",
+									"value": ""
+								},
+								{
+									"key": "option",
+									"value": ""
+								},
+								{
+									"key": "update_after",
+									"value": "2023-06-29T03:28:57Z",
+									"disabled": true
+								},
+								{
+									"key": "state",
+									"value": "waiting_confirm,delivering"
+								},
+								{
+									"key": "is_active",
+									"value": "true"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "seller_view_debt_amount",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"// random number between min and max",
+									"function getRandomInt(min, max) {",
+									"  \treturn Math.floor(Math.random() * (max - min + 1)) + min;",
+									"}",
+									"",
+									"let testcase = pm.environment.get(\"C-testcase\");",
+									"console.log(\"Testcase: \" + testcase);",
+									"",
+									"let list_contact = pm.environment.get(\"C-list_contact\");",
+									"let ranCon,contact_id;",
+									"switch(testcase){",
+									"    case 2:",
+									"        ranCon = getRandomInt(0,list_contact.length - 1);",
+									"        contact_id = list_contact[ranCon].contact_id;",
+									"        pm.environment.set(\"C-ranCon\",ranCon);",
+									"        pm.environment.set(\"C-contact_id\",contact_id);",
+									"        break;",
+									"    case 4:",
+									"        break;",
+									"    default:",
+									"        console.log(\"Missing flow\");",
+									"        break;",
+									"}",
+									"console.log(\"Will create import po with contact: \" + JSON.stringify(list_contact[ranCon]));",
+									"",
+									""
+								],
+								"type": "text/javascript"
+							}
+						},
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"if(pm.response.code == 200){",
+									"    const jsData = pm.response.json();",
+									"    let testcase = pm.environment.get(\"C-testcase\");",
+									"    console.log(\"Debug: \" + JSON.stringify(jsData));",
+									"",
+									"    let list_contact = pm.environment.get(\"C-list_contact\");",
+									"    let ranCon = pm.environment.get(\"C-ranCon\");",
+									"",
+									"    let inbound_order_obj, buyer_pay, total_pay = 0;",
+									"    switch(testcase){",
+									"        case 2:",
+									"            pm.test(\"debt_amount correctly & got it \" + list_contact[ranCon].debt_amount, function () {",
+									"                pm.expect(list_contact[ranCon].debt_amount == jsData.data.debt_amount).to.be.true;",
+									"            });",
+									"",
+									"            pm.environment.set(\"C-contact_obj\",list_contact[ranCon]);",
+									"            // pm.environment.unset(\"C-list_contact\");",
+									"",
+									"            postman.setNextRequest(\"view_list_payment_source\"); // view_list_payment_source",
+									"            break;",
+									"        case 4:",
+									"            inbound_order_obj = pm.environment.get(\"C-inbound_order_obj\");",
+									"            buyer_pay = inbound_order_obj.buyer_pay;",
+									"            console.log(\"debug inbound_order_obj: \", inbound_order_obj);",
+									"            if(inbound_order_obj.is_debit){",
+									"                for(let item in inbound_order_obj.po_details){",
+									"                    total_pay += inbound_order_obj.po_details[item].pricing * inbound_order_obj.po_details[item].quantity;",
+									"                }",
+									"                pm.test(\"debt_amount updated \" + (total_pay - buyer_pay), function () {",
+									"                    console.log(\"list_contact[ranCon].debt_amount: \" + list_contact[ranCon].debt_amount);",
+									"                    console.log(\"jsData.data.debt_amount: \" + jsData.data.debt_amount);",
+									"                    pm.expect(list_contact[ranCon].debt_amount - (total_pay - buyer_pay) == jsData.data.debt_amount).to.be.true;",
+									"                });",
+									"            } else {",
+									"                pm.test(\"Nothing happen\", function () {",
+									"                    pm.expect(list_contact[ranCon].debt_amount == jsData.data.debt_amount).to.be.true;",
+									"                });",
+									"            }",
+									"",
+									"            testcase++;",
+									"            pm.environment.set(\"C-testcase\",testcase);",
+									"            postman.setNextRequest(\"\"); // seller_create_an_import_goods",
+									"            break;",
+									"        default:",
+									"            console.log(\"Missing flow, end test\");",
+									"            postman.setNextRequest(null);",
+									"            break;",
+									"    }",
+									"} else {",
+									"    console.log(\"Can't get contact's dept amount, end test\");",
+									"    postman.setNextRequest(null);",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{C-userToken}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{sbh_base_url}}/finan-business/api/v1/contact/get-debt-amount?contact_id={{C-contact_id}}",
+							"host": [
+								"{{sbh_base_url}}"
+							],
+							"path": [
+								"finan-business",
+								"api",
+								"v1",
+								"contact",
+								"get-debt-amount"
+							],
+							"query": [
+								{
+									"key": "contact_id",
+									"value": "{{C-contact_id}}"
+								}
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Transaction",
+			"item": [
+				{
+					"name": "view_list_payment_source",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"let testcase = pm.environment.get(\"C-testcase\");",
+									"console.log(\"Testcase: \" + testcase);"
+								],
+								"type": "text/javascript"
+							}
+						},
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"if(pm.response.code == 200){",
+									"    const jsData = pm.response.json();",
+									"    let testcase = pm.environment.get(\"C-testcase\");",
+									"    let payment_obj = null;",
+									"    for(let item in jsData.data){",
+									"        if(jsData.data[item].name == \"Tiền mặt\"){",
+									"            payment_obj = {",
+									"                \"payment_source_id\":jsData.data[item].id,",
+									"                \"name\":jsData.data[item].name,",
+									"                \"balance\":jsData.data[item].balance,",
+									"                \"status\":jsData.data[item].status,",
+									"                \"is_default\":jsData.data[item].is_default",
+									"            }",
+									"            break;",
+									"        }",
+									"    }",
+									"",
+									"    pm.test(\"Got payment_obj\", function () {",
+									"        console.log(\"payment_obj: \" + JSON.stringify(payment_obj));",
+									"        pm.expect(payment_obj != null).to.be.true;",
+									"    });",
+									"    pm.environment.set(\"C-payment_obj\",payment_obj);",
+									"",
+									"    testcase++;",
+									"    pm.environment.set(\"C-testcase\",testcase);",
+									"    postman.setNextRequest(\"seller_create_an_import_goods\"); // seller_create_an_import_goods",
+									"} else {",
+									"    console.log(\"Can't get list_payment_source, end test\");",
+									"    postman.setNextRequest(null);",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{C-userToken}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{sbh_base_url}}/finan-transaction/api/v1/payment-source/get-list?business_id={{C-business_id}}&page=1&page_size=30&sort=priority asc&search=&type=",
+							"host": [
+								"{{sbh_base_url}}"
+							],
+							"path": [
+								"finan-transaction",
+								"api",
+								"v1",
+								"payment-source",
+								"get-list"
+							],
+							"query": [
+								{
+									"key": "business_id",
+									"value": "{{C-business_id}}"
+								},
+								{
+									"key": "page",
+									"value": "1"
+								},
+								{
+									"key": "page_size",
+									"value": "30"
+								},
+								{
+									"key": "sort",
+									"value": "priority asc"
+								},
+								{
+									"key": "search",
+									"value": ""
+								},
+								{
+									"key": "type",
+									"value": ""
+								}
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		}
+	]
+}

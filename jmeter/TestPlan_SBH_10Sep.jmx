@@ -1,0 +1,2014 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<jmeterTestPlan version="1.2" properties="5.0" jmeter="5.6.3">
+  <hashTree>
+    <TestPlan guiclass="TestPlanGui" testclass="TestPlan" testname="Test Plan">
+      <elementProp name="TestPlan.user_defined_variables" elementType="Arguments" guiclass="ArgumentsPanel" testclass="Arguments" testname="User Defined Variables">
+        <collectionProp name="Arguments.arguments"/>
+      </elementProp>
+    </TestPlan>
+    <hashTree>
+      <Arguments guiclass="ArgumentsPanel" testclass="Arguments" testname="User Defined Variables">
+        <collectionProp name="Arguments.arguments">
+          <elementProp name="sbh_base_url" elementType="Argument">
+            <stringProp name="Argument.name">sbh_base_url</stringProp>
+            <stringProp name="Argument.value">api-stg.sobanhang.com</stringProp>
+            <stringProp name="Argument.metadata">=</stringProp>
+            <stringProp name="Argument.desc">STG: stg-api.finan.dev  CMC-DEV: api-dev.sobanhang.com</stringProp>
+          </elementProp>
+          <elementProp name="SER-phone_number" elementType="Argument">
+            <stringProp name="Argument.name">SER-phone_number</stringProp>
+            <stringProp name="Argument.value">0907470430</stringProp>
+            <stringProp name="Argument.metadata">=</stringProp>
+          </elementProp>
+          <elementProp name="x-current-version" elementType="Argument">
+            <stringProp name="Argument.name">x-current-version</stringProp>
+            <stringProp name="Argument.value">2.13.14</stringProp>
+            <stringProp name="Argument.metadata">=</stringProp>
+          </elementProp>
+          <elementProp name="pwd" elementType="Argument">
+            <stringProp name="Argument.name">pwd</stringProp>
+            <stringProp name="Argument.value">dfa68996d30cbd79f2ab1de7ca3c43beb09c6d318b13403ecb8f1a06e9b276a39eff4b64</stringProp>
+            <stringProp name="Argument.metadata">=</stringProp>
+          </elementProp>
+        </collectionProp>
+      </Arguments>
+      <hashTree/>
+      <ConfigTestElement guiclass="HttpDefaultsGui" testclass="ConfigTestElement" testname="HTTP Request Defaults" enabled="true">
+        <stringProp name="HTTPSampler.protocol">https</stringProp>
+        <elementProp name="HTTPsampler.Arguments" elementType="Arguments" guiclass="HTTPArgumentsPanel" testclass="Arguments" testname="User Defined Variables">
+          <collectionProp name="Arguments.arguments"/>
+        </elementProp>
+        <stringProp name="HTTPSampler.implementation">HttpClient4</stringProp>
+      </ConfigTestElement>
+      <hashTree/>
+      <ThreadGroup guiclass="ThreadGroupGui" testclass="ThreadGroup" testname="Thread Group">
+        <boolProp name="ThreadGroup.delayedStart">true</boolProp>
+        <intProp name="ThreadGroup.num_threads">10</intProp>
+        <intProp name="ThreadGroup.ramp_time">10</intProp>
+        <longProp name="ThreadGroup.duration">10800</longProp>
+        <longProp name="ThreadGroup.delay">1</longProp>
+        <boolProp name="ThreadGroup.same_user_on_next_iteration">true</boolProp>
+        <boolProp name="ThreadGroup.scheduler">true</boolProp>
+        <stringProp name="ThreadGroup.on_sample_error">continue</stringProp>
+        <elementProp name="ThreadGroup.main_controller" elementType="LoopController" guiclass="LoopControlPanel" testclass="LoopController" testname="Loop Controller">
+          <stringProp name="LoopController.loops">1</stringProp>
+          <boolProp name="LoopController.continue_forever">false</boolProp>
+        </elementProp>
+      </ThreadGroup>
+      <hashTree>
+        <CSVDataSet guiclass="TestBeanGUI" testclass="CSVDataSet" testname="CSV Data Set Config">
+          <stringProp name="delimiter">,</stringProp>
+          <stringProp name="fileEncoding"></stringProp>
+          <stringProp name="filename">/Users/SBH/Documents/AutoSBH/AutoAPI/jmeter/data/shb_perf_account.csv</stringProp>
+          <boolProp name="ignoreFirstLine">true</boolProp>
+          <boolProp name="quotedData">false</boolProp>
+          <boolProp name="recycle">false</boolProp>
+          <stringProp name="shareMode">shareMode.group</stringProp>
+          <boolProp name="stopThread">true</boolProp>
+          <stringProp name="variableNames">username,password,en_pwd</stringProp>
+        </CSVDataSet>
+        <hashTree/>
+        <CookieManager guiclass="CookiePanel" testclass="CookieManager" testname="HTTP Cookie Manager" enabled="true">
+          <collectionProp name="CookieManager.cookies"/>
+          <boolProp name="CookieManager.clearEachIteration">false</boolProp>
+          <boolProp name="CookieManager.controlledByThreadGroup">false</boolProp>
+        </CookieManager>
+        <hashTree/>
+        <DebugSampler guiclass="TestBeanGUI" testclass="DebugSampler" testname="Debug Sampler" enabled="false">
+          <boolProp name="displayJMeterProperties">false</boolProp>
+          <boolProp name="displayJMeterVariables">true</boolProp>
+          <boolProp name="displaySystemProperties">false</boolProp>
+        </DebugSampler>
+        <hashTree/>
+        <JSR223Sampler guiclass="TestBeanGUI" testclass="JSR223Sampler" testname="JSR223 Sampler" enabled="false">
+          <stringProp name="cacheKey">true</stringProp>
+          <stringProp name="filename"></stringProp>
+          <stringProp name="parameters"></stringProp>
+          <stringProp name="script">log.info(&quot;Current thread number: &quot; + ${__threadNum})
+log.info(&quot;Username: &quot; + vars.get(&quot;username&quot;))
+
+// Đọc dòng tiếp theo từ file CSV
+def username = &quot;${__CSVRead(sbh_perf_account.csv,0)}&quot;
+def password = &quot;${__CSVRead(sbh_perf_account.csv,1)}&quot;
+
+log.info(&quot;Username: &quot; + username)
+log.info(&quot;Password: &quot; + password)</stringProp>
+          <stringProp name="scriptLanguage">groovy</stringProp>
+        </JSR223Sampler>
+        <hashTree/>
+        <ResultCollector guiclass="ViewResultsFullVisualizer" testclass="ResultCollector" testname="View Results Tree" enabled="false">
+          <boolProp name="ResultCollector.error_logging">false</boolProp>
+          <objProp>
+            <name>saveConfig</name>
+            <value class="SampleSaveConfiguration">
+              <time>true</time>
+              <latency>true</latency>
+              <timestamp>true</timestamp>
+              <success>true</success>
+              <label>true</label>
+              <code>true</code>
+              <message>true</message>
+              <threadName>true</threadName>
+              <dataType>true</dataType>
+              <encoding>false</encoding>
+              <assertions>true</assertions>
+              <subresults>true</subresults>
+              <responseData>false</responseData>
+              <samplerData>false</samplerData>
+              <xml>false</xml>
+              <fieldNames>true</fieldNames>
+              <responseHeaders>false</responseHeaders>
+              <requestHeaders>false</requestHeaders>
+              <responseDataOnError>false</responseDataOnError>
+              <saveAssertionResultsFailureMessage>true</saveAssertionResultsFailureMessage>
+              <assertionsResultsToSave>0</assertionsResultsToSave>
+              <bytes>true</bytes>
+              <sentBytes>true</sentBytes>
+              <url>true</url>
+              <threadCounts>true</threadCounts>
+              <idleTime>true</idleTime>
+              <connectTime>true</connectTime>
+            </value>
+          </objProp>
+          <stringProp name="filename"></stringProp>
+        </ResultCollector>
+        <hashTree/>
+        <HTTPSamplerProxy guiclass="HttpTestSampleGui" testclass="HTTPSamplerProxy" testname="Verify login" enabled="true">
+          <stringProp name="HTTPSampler.domain">${sbh_base_url}</stringProp>
+          <stringProp name="HTTPSampler.path">/finan-user/api/v1/auth/account/verify</stringProp>
+          <boolProp name="HTTPSampler.follow_redirects">true</boolProp>
+          <stringProp name="HTTPSampler.method">POST</stringProp>
+          <boolProp name="HTTPSampler.use_keepalive">true</boolProp>
+          <boolProp name="HTTPSampler.postBodyRaw">true</boolProp>
+          <elementProp name="HTTPsampler.Arguments" elementType="Arguments">
+            <collectionProp name="Arguments.arguments">
+              <elementProp name="" elementType="HTTPArgument">
+                <boolProp name="HTTPArgument.always_encode">false</boolProp>
+                <stringProp name="Argument.value">{&#xd;
+	&quot;phone_number&quot;: &quot;${username}&quot;&#xd;
+}</stringProp>
+                <stringProp name="Argument.metadata">=</stringProp>
+              </elementProp>
+            </collectionProp>
+          </elementProp>
+        </HTTPSamplerProxy>
+        <hashTree>
+          <HeaderManager guiclass="HeaderPanel" testclass="HeaderManager" testname="HTTP Header Manager" enabled="true">
+            <collectionProp name="HeaderManager.headers">
+              <elementProp name="" elementType="Header">
+                <stringProp name="Header.name">Content-Type</stringProp>
+                <stringProp name="Header.value">application/json</stringProp>
+              </elementProp>
+            </collectionProp>
+          </HeaderManager>
+          <hashTree/>
+          <JSR223PostProcessor guiclass="TestBeanGUI" testclass="JSR223PostProcessor" testname="JSR223 PostProcessor" enabled="true">
+            <stringProp name="scriptLanguage">groovy</stringProp>
+            <stringProp name="parameters"></stringProp>
+            <stringProp name="filename"></stringProp>
+            <stringProp name="cacheKey">true</stringProp>
+            <stringProp name="script">// Get the response code (e.g., 200, 404, etc.)
+def responseCode = prev.getResponseCode()
+// Get the response message (e.g., &quot;OK&quot;, &quot;Not Found&quot;, etc.)
+def responseMessage = prev.getResponseMessage()
+
+def username = vars.get(&quot;username&quot;);
+if(responseCode != 200){
+	println(&quot;===&gt; [Verify Login] Thread-&quot; + ${__threadNum} + &quot; (&quot; + username + &quot;) responseMessage: &quot; + responseMessage)
+	log.info(&quot;===&gt; [Verify Login] Thread-&quot; + ${__threadNum} + &quot; (&quot; + username + &quot;) responseMessage: &quot; + responseMessage)
+} else {
+	println(&quot;===&gt; [Verify Login] Thread-&quot; + ${__threadNum} + &quot; (&quot; + username + &quot;) responseCode: &quot; + responseCode)
+	log.info(&quot;===&gt; [Verify Login] Thread-&quot; + ${__threadNum} + &quot; (&quot; + username + &quot;) responseCode: &quot; + responseCode)
+}
+//println(&quot;===&gt; responseMessage: &quot; + responseMessage)</stringProp>
+          </JSR223PostProcessor>
+          <hashTree/>
+        </hashTree>
+        <HTTPSamplerProxy guiclass="HttpTestSampleGui" testclass="HTTPSamplerProxy" testname="Login with pwd" enabled="true">
+          <stringProp name="HTTPSampler.domain">${sbh_base_url}</stringProp>
+          <stringProp name="HTTPSampler.path">/finan-user/api/v1/auth/account/login</stringProp>
+          <boolProp name="HTTPSampler.follow_redirects">true</boolProp>
+          <stringProp name="HTTPSampler.method">POST</stringProp>
+          <boolProp name="HTTPSampler.use_keepalive">true</boolProp>
+          <boolProp name="HTTPSampler.postBodyRaw">true</boolProp>
+          <elementProp name="HTTPsampler.Arguments" elementType="Arguments">
+            <collectionProp name="Arguments.arguments">
+              <elementProp name="" elementType="HTTPArgument">
+                <boolProp name="HTTPArgument.always_encode">false</boolProp>
+                <stringProp name="Argument.value">{&#xd;
+	&quot;phone_number&quot;: &quot;${username}&quot;,&#xd;
+	&quot;pwd&quot;: &quot;${en_pwd}&quot;,&#xd;
+	&quot;platform&quot;: &quot;gtapp&quot;,&#xd;
+	&quot;device_id&quot;: &quot;${device_id}&quot;,&#xd;
+	&quot;app_version&quot;: &quot;${x-current-version}&quot;,&#xd;
+	&quot;device_name&quot;: &quot;iPhone&quot;&#xd;
+}</stringProp>
+                <stringProp name="Argument.metadata">=</stringProp>
+              </elementProp>
+            </collectionProp>
+          </elementProp>
+        </HTTPSamplerProxy>
+        <hashTree>
+          <HeaderManager guiclass="HeaderPanel" testclass="HeaderManager" testname="HTTP Header Manager" enabled="true">
+            <collectionProp name="HeaderManager.headers">
+              <elementProp name="" elementType="Header">
+                <stringProp name="Header.name">Content-Type</stringProp>
+                <stringProp name="Header.value">application/json</stringProp>
+              </elementProp>
+            </collectionProp>
+          </HeaderManager>
+          <hashTree/>
+          <JSR223PreProcessor guiclass="TestBeanGUI" testclass="JSR223PreProcessor" testname="JSR223 PreProcessor" enabled="true">
+            <stringProp name="cacheKey">true</stringProp>
+            <stringProp name="filename"></stringProp>
+            <stringProp name="parameters"></stringProp>
+            <stringProp name="script">// Function to generate a random string of specified length
+String randomChars(int length) {
+    // Define the characters to use for the random string
+    def characters = &quot;ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789&quot;
+    def charactersLength = characters.length()
+
+    // Initialize an empty StringBuilder to store the result
+    def result = new StringBuilder()
+
+    // Loop to generate random characters
+    for (int i = 0; i &lt; length; i++) {
+        // Append a random character to the result
+        result.append(characters[(Math.random() * charactersLength) as int])
+    }
+
+    // Return the final random string
+    return result.toString()
+}
+
+// Example usage
+def device_id = randomChars(6) + &quot;-&quot; + randomChars(4) + &quot;-&quot; + randomChars(4) + &quot;-&quot; + randomChars(4) + &quot;-&quot; + randomChars(12)
+
+def username = vars.get(&quot;username&quot;);
+//println(username + &quot; login with device_id: &quot; + device_id)
+
+vars.put(&quot;device_id&quot;, device_id);</stringProp>
+            <stringProp name="scriptLanguage">groovy</stringProp>
+          </JSR223PreProcessor>
+          <hashTree/>
+          <JSR223PostProcessor guiclass="TestBeanGUI" testclass="JSR223PostProcessor" testname="JSR223 PostProcessor" enabled="true">
+            <stringProp name="cacheKey">true</stringProp>
+            <stringProp name="filename"></stringProp>
+            <stringProp name="parameters"></stringProp>
+            <stringProp name="script">// Import required classes for JSON handling
+import groovy.json.JsonSlurper
+
+// Get the response code (e.g., 200, 404, etc.)
+def responseCode = prev.getResponseCode()
+// Get the response message (e.g., &quot;OK&quot;, &quot;Not Found&quot;, etc.)
+def responseMessage = prev.getResponseMessage()
+
+def username = vars.get(&quot;username&quot;);
+if(responseCode != 200){
+	println(&quot;===&gt; [Login] Thread-&quot; + ${__threadNum} + &quot; (&quot; + username + &quot;) responseMessage: &quot; + responseMessage)
+	log.info(&quot;===&gt; [Login] Thread-&quot; + ${__threadNum} + &quot; (&quot; + username + &quot;) responseMessage: &quot; + responseMessage)
+} else {
+	println(&quot;===&gt; [Login] Thread-&quot; + ${__threadNum} + &quot; (&quot; + username + &quot;) responseCode: &quot; + responseCode)
+	log.info(&quot;===&gt; [Login] Thread-&quot; + ${__threadNum} + &quot; (&quot; + username + &quot;) responseCode: &quot; + responseCode)
+}
+//println(&quot;===&gt; responseMessage: &quot; + responseMessage)
+
+// Get the response data
+def response = prev.getResponseDataAsString()
+
+// Parse the response as JSON
+def jsonSlurper = new JsonSlurper()
+def jsonResponse = jsonSlurper.parseText(response)
+
+// Extract the desired data from the parsed JSON object
+def userToken = jsonResponse.data.token
+vars.put(&quot;userToken&quot;, userToken)
+//log.info(&quot;===========&gt; userToken: &quot; + userToken)
+
+def business_id = jsonResponse.data.business_info.list_business[0].business_id
+vars.put(&quot;business_id&quot;, business_id)
+//log.info(&quot;===========&gt; business_id: &quot; + business_id)</stringProp>
+            <stringProp name="scriptLanguage">groovy</stringProp>
+          </JSR223PostProcessor>
+          <hashTree/>
+          <BeanShellAssertion guiclass="BeanShellAssertionGui" testclass="BeanShellAssertion" testname="BeanShell Assertion" enabled="false">
+            <stringProp name="BeanShellAssertion.query">${__setProperty(C-userToken,${userToken})}
+${__setProperty(C-business_id,${business_id})}</stringProp>
+            <stringProp name="BeanShellAssertion.filename"></stringProp>
+            <stringProp name="BeanShellAssertion.parameters"></stringProp>
+            <boolProp name="BeanShellAssertion.resetInterpreter">false</boolProp>
+          </BeanShellAssertion>
+          <hashTree/>
+        </hashTree>
+        <HTTPSamplerProxy guiclass="HttpTestSampleGui" testclass="HTTPSamplerProxy" testname="Get payment source" enabled="true">
+          <stringProp name="HTTPSampler.domain">${sbh_base_url}</stringProp>
+          <stringProp name="HTTPSampler.path">/finan-transaction/api/v1/payment-source/get-list</stringProp>
+          <boolProp name="HTTPSampler.follow_redirects">true</boolProp>
+          <stringProp name="HTTPSampler.method">GET</stringProp>
+          <boolProp name="HTTPSampler.use_keepalive">true</boolProp>
+          <boolProp name="HTTPSampler.postBodyRaw">false</boolProp>
+          <elementProp name="HTTPsampler.Arguments" elementType="Arguments" guiclass="HTTPArgumentsPanel" testclass="Arguments" testname="User Defined Variables">
+            <collectionProp name="Arguments.arguments">
+              <elementProp name="business_id" elementType="HTTPArgument">
+                <boolProp name="HTTPArgument.always_encode">true</boolProp>
+                <stringProp name="Argument.value">${business_id}</stringProp>
+                <stringProp name="Argument.metadata">=</stringProp>
+                <boolProp name="HTTPArgument.use_equals">true</boolProp>
+                <stringProp name="Argument.name">business_id</stringProp>
+              </elementProp>
+              <elementProp name="page" elementType="HTTPArgument">
+                <boolProp name="HTTPArgument.always_encode">true</boolProp>
+                <stringProp name="Argument.value">1</stringProp>
+                <stringProp name="Argument.metadata">=</stringProp>
+                <boolProp name="HTTPArgument.use_equals">true</boolProp>
+                <stringProp name="Argument.name">page</stringProp>
+              </elementProp>
+              <elementProp name="page_size" elementType="HTTPArgument">
+                <boolProp name="HTTPArgument.always_encode">true</boolProp>
+                <stringProp name="Argument.value">20</stringProp>
+                <stringProp name="Argument.metadata">=</stringProp>
+                <boolProp name="HTTPArgument.use_equals">true</boolProp>
+                <stringProp name="Argument.name">page_size</stringProp>
+              </elementProp>
+            </collectionProp>
+          </elementProp>
+        </HTTPSamplerProxy>
+        <hashTree>
+          <HeaderManager guiclass="HeaderPanel" testclass="HeaderManager" testname="HTTP Header Manager" enabled="true">
+            <collectionProp name="HeaderManager.headers">
+              <elementProp name="" elementType="Header">
+                <stringProp name="Header.name">Content-Type</stringProp>
+                <stringProp name="Header.value">application/json</stringProp>
+              </elementProp>
+              <elementProp name="" elementType="Header">
+                <stringProp name="Header.name">Authorization</stringProp>
+                <stringProp name="Header.value">Bearer ${userToken}</stringProp>
+              </elementProp>
+            </collectionProp>
+          </HeaderManager>
+          <hashTree/>
+          <JSR223PostProcessor guiclass="TestBeanGUI" testclass="JSR223PostProcessor" testname="JSR223 PostProcessor" enabled="true">
+            <stringProp name="cacheKey">true</stringProp>
+            <stringProp name="filename"></stringProp>
+            <stringProp name="parameters"></stringProp>
+            <stringProp name="script">// Import required classes for JSON handling
+import groovy.json.JsonSlurper
+
+// Get the response data
+def response = prev.getResponseDataAsString()
+
+// Parse the response as JSON
+def jsonSlurper = new JsonSlurper()
+def jsonResponse = jsonSlurper.parseText(response)
+
+def payment_source_id
+for (item in jsonResponse.data) {
+    if (item.name == &quot;Tiền mặt&quot;) {
+        payment_source_id = item.id;
+        break
+    }
+}
+
+// Extract the desired data from the parsed JSON object
+vars.put(&quot;payment_source_id&quot;, payment_source_id)
+//println(&quot;===========&gt; payment_resource_id: &quot; + payment_resource_id)
+
+// Get the response code (e.g., 200, 404, etc.)
+def responseCode = prev.getResponseCode()
+// Get the response message (e.g., &quot;OK&quot;, &quot;Not Found&quot;, etc.)
+def responseMessage = prev.getResponseMessage()
+
+def username = vars.get(&quot;username&quot;);
+if(responseCode != 200){
+	println(&quot;===&gt; [Get payment source] Thread-&quot; + ${__threadNum} + &quot; (&quot; + username + &quot;) responseMessage: &quot; + responseMessage)
+	log.info(&quot;===&gt; [Get payment source] Thread-&quot; + ${__threadNum} + &quot; (&quot; + username + &quot;) responseMessage: &quot; + responseMessage)
+} else {
+	println(&quot;===&gt; [Get payment source] Thread-&quot; + ${__threadNum} + &quot; (&quot; + username + &quot;) responseCode: &quot; + responseCode)
+	log.info(&quot;===&gt; [Get payment source] Thread-&quot; + ${__threadNum} + &quot; (&quot; + username + &quot;) responseCode: &quot; + responseCode)
+}</stringProp>
+            <stringProp name="scriptLanguage">groovy</stringProp>
+          </JSR223PostProcessor>
+          <hashTree/>
+        </hashTree>
+        <LoopController guiclass="LoopControlPanel" testclass="LoopController" testname="Loop Controller" enabled="true">
+          <intProp name="LoopController.loops">-1</intProp>
+          <stringProp name="TestPlan.comments">loop to die</stringProp>
+        </LoopController>
+        <hashTree>
+          <RandomVariableConfig guiclass="TestBeanGUI" testclass="RandomVariableConfig" testname="random int" enabled="true">
+            <stringProp name="maximumValue">9999999</stringProp>
+            <stringProp name="minimumValue">1000000</stringProp>
+            <stringProp name="outputFormat"></stringProp>
+            <boolProp name="perThread">false</boolProp>
+            <stringProp name="randomSeed"></stringProp>
+            <stringProp name="variableName">randInt</stringProp>
+          </RandomVariableConfig>
+          <hashTree/>
+          <RandomVariableConfig guiclass="TestBeanGUI" testclass="RandomVariableConfig" testname="random product position" enabled="true">
+            <stringProp name="variableName">position</stringProp>
+            <stringProp name="outputFormat"></stringProp>
+            <stringProp name="minimumValue">0</stringProp>
+            <stringProp name="maximumValue">9</stringProp>
+            <stringProp name="randomSeed"></stringProp>
+            <boolProp name="perThread">false</boolProp>
+          </RandomVariableConfig>
+          <hashTree/>
+          <HTTPSamplerProxy guiclass="HttpTestSampleGui" testclass="HTTPSamplerProxy" testname="get default product list" enabled="true">
+            <stringProp name="HTTPSampler.domain">${sbh_base_url}</stringProp>
+            <stringProp name="HTTPSampler.path">/finan-product/api/v1/product/get-all-product-in-stock</stringProp>
+            <boolProp name="HTTPSampler.follow_redirects">true</boolProp>
+            <stringProp name="HTTPSampler.method">GET</stringProp>
+            <boolProp name="HTTPSampler.use_keepalive">true</boolProp>
+            <boolProp name="HTTPSampler.postBodyRaw">false</boolProp>
+            <elementProp name="HTTPsampler.Arguments" elementType="Arguments" guiclass="HTTPArgumentsPanel" testclass="Arguments" testname="User Defined Variables">
+              <collectionProp name="Arguments.arguments">
+                <elementProp name="business_id" elementType="HTTPArgument">
+                  <boolProp name="HTTPArgument.always_encode">true</boolProp>
+                  <stringProp name="Argument.value">${business_id}</stringProp>
+                  <stringProp name="Argument.metadata">=</stringProp>
+                  <boolProp name="HTTPArgument.use_equals">true</boolProp>
+                  <stringProp name="Argument.name">business_id</stringProp>
+                </elementProp>
+                <elementProp name="page" elementType="HTTPArgument">
+                  <boolProp name="HTTPArgument.always_encode">true</boolProp>
+                  <stringProp name="Argument.value">1</stringProp>
+                  <stringProp name="Argument.metadata">=</stringProp>
+                  <boolProp name="HTTPArgument.use_equals">true</boolProp>
+                  <stringProp name="Argument.name">page</stringProp>
+                </elementProp>
+                <elementProp name="page_size" elementType="HTTPArgument">
+                  <boolProp name="HTTPArgument.always_encode">true</boolProp>
+                  <stringProp name="Argument.value">50</stringProp>
+                  <stringProp name="Argument.metadata">=</stringProp>
+                  <boolProp name="HTTPArgument.use_equals">true</boolProp>
+                  <stringProp name="Argument.name">page_size</stringProp>
+                </elementProp>
+                <elementProp name="sort" elementType="HTTPArgument">
+                  <boolProp name="HTTPArgument.always_encode">true</boolProp>
+                  <stringProp name="Argument.value">priority asc</stringProp>
+                  <stringProp name="Argument.metadata">=</stringProp>
+                  <boolProp name="HTTPArgument.use_equals">true</boolProp>
+                  <stringProp name="Argument.name">sort</stringProp>
+                </elementProp>
+              </collectionProp>
+            </elementProp>
+          </HTTPSamplerProxy>
+          <hashTree>
+            <HeaderManager guiclass="HeaderPanel" testclass="HeaderManager" testname="HTTP Header Manager" enabled="true">
+              <collectionProp name="HeaderManager.headers">
+                <elementProp name="" elementType="Header">
+                  <stringProp name="Header.name">Authorization</stringProp>
+                  <stringProp name="Header.value">Bearer ${userToken}</stringProp>
+                </elementProp>
+                <elementProp name="" elementType="Header">
+                  <stringProp name="Header.name">Content-Type</stringProp>
+                  <stringProp name="Header.value">application/json</stringProp>
+                </elementProp>
+              </collectionProp>
+            </HeaderManager>
+            <hashTree/>
+            <JSONPostProcessor guiclass="JSONPostProcessorGui" testclass="JSONPostProcessor" testname="get sku id" enabled="true">
+              <stringProp name="JSONPostProcessor.referenceNames">sku_id</stringProp>
+              <stringProp name="JSONPostProcessor.jsonPathExprs">$.data[${position}].id</stringProp>
+              <stringProp name="JSONPostProcessor.match_numbers"></stringProp>
+            </JSONPostProcessor>
+            <hashTree/>
+            <JSONPostProcessor guiclass="JSONPostProcessorGui" testclass="JSONPostProcessor" testname="get product id" enabled="true">
+              <stringProp name="JSONPostProcessor.referenceNames">product_id</stringProp>
+              <stringProp name="JSONPostProcessor.jsonPathExprs">$.data[${position}].product_id</stringProp>
+              <stringProp name="JSONPostProcessor.match_numbers"></stringProp>
+            </JSONPostProcessor>
+            <hashTree/>
+            <JSONPostProcessor guiclass="JSONPostProcessorGui" testclass="JSONPostProcessor" testname="get sku_price" enabled="true">
+              <stringProp name="JSONPostProcessor.referenceNames">sku_price</stringProp>
+              <stringProp name="JSONPostProcessor.jsonPathExprs">$.data[${position}].normal_price</stringProp>
+              <stringProp name="JSONPostProcessor.match_numbers"></stringProp>
+            </JSONPostProcessor>
+            <hashTree/>
+            <JSONPostProcessor guiclass="JSONPostProcessorGui" testclass="JSONPostProcessor" testname="get product_name" enabled="true">
+              <stringProp name="JSONPostProcessor.referenceNames">product_name</stringProp>
+              <stringProp name="JSONPostProcessor.jsonPathExprs">$.data[${position}].product_name</stringProp>
+              <stringProp name="JSONPostProcessor.match_numbers"></stringProp>
+            </JSONPostProcessor>
+            <hashTree/>
+            <JSONPostProcessor guiclass="JSONPostProcessorGui" testclass="JSONPostProcessor" testname="get sku_name" enabled="true">
+              <stringProp name="JSONPostProcessor.referenceNames">sku_name</stringProp>
+              <stringProp name="JSONPostProcessor.jsonPathExprs">$.data[${position}].sku_name</stringProp>
+              <stringProp name="JSONPostProcessor.match_numbers"></stringProp>
+            </JSONPostProcessor>
+            <hashTree/>
+            <JSONPostProcessor guiclass="JSONPostProcessorGui" testclass="JSONPostProcessor" testname="get sku_code" enabled="true">
+              <stringProp name="JSONPostProcessor.referenceNames">sku_code</stringProp>
+              <stringProp name="JSONPostProcessor.jsonPathExprs">$.data[${position}].sku_code</stringProp>
+              <stringProp name="JSONPostProcessor.match_numbers"></stringProp>
+            </JSONPostProcessor>
+            <hashTree/>
+            <JSONPostProcessor guiclass="JSONPostProcessorGui" testclass="JSONPostProcessor" testname="get can_pick_quantity" enabled="true">
+              <stringProp name="JSONPostProcessor.referenceNames">can_pick_quantity</stringProp>
+              <stringProp name="JSONPostProcessor.jsonPathExprs">$.data[${position}].can_pick_quantity</stringProp>
+              <stringProp name="JSONPostProcessor.match_numbers"></stringProp>
+            </JSONPostProcessor>
+            <hashTree/>
+            <JSR223PostProcessor guiclass="TestBeanGUI" testclass="JSR223PostProcessor" testname="JSR223 PostProcessor" enabled="true">
+              <stringProp name="scriptLanguage">groovy</stringProp>
+              <stringProp name="parameters"></stringProp>
+              <stringProp name="filename"></stringProp>
+              <stringProp name="cacheKey">true</stringProp>
+              <stringProp name="script">// Get the response code (e.g., 200, 404, etc.)
+def responseCode = prev.getResponseCode()
+// Get the response message (e.g., &quot;OK&quot;, &quot;Not Found&quot;, etc.)
+def responseMessage = prev.getResponseMessage()
+
+def username = vars.get(&quot;username&quot;);
+if(responseCode != 200){
+	println(&quot;===&gt; [Get product] Thread-&quot; + ${__threadNum} + &quot; (&quot; + username + &quot;) responseMessage: &quot; + responseMessage)
+	log.info(&quot;===&gt; [Get product] Thread-&quot; + ${__threadNum} + &quot; (&quot; + username + &quot;) responseMessage: &quot; + responseMessage)
+} else {
+	println(&quot;===&gt; [Get product] Thread-&quot; + ${__threadNum} + &quot; (&quot; + username + &quot;) responseCode: &quot; + responseCode)
+	log.info(&quot;===&gt; [Get product] Thread-&quot; + ${__threadNum} + &quot; (&quot; + username + &quot;) responseCode: &quot; + responseCode)
+}
+//println(&quot;===&gt; responseMessage: &quot; + responseMessage)
+
+//// Import required classes for JSON handling
+//import groovy.json.JsonSlurper
+//
+//// Get the response data
+//def response = prev.getResponseDataAsString()
+//
+//// Parse the response as JSON
+//def jsonSlurper = new JsonSlurper()
+//def jsonResponse = jsonSlurper.parseText(response)
+//log.info(&quot;===========&gt; jsonResponse: &quot; + jsonResponse)
+//
+//// Extract the desired data from the parsed JSON object
+//def position = vars.get(&quot;position&quot;)
+//log.info(&quot;===========&gt; position: &quot; + position)
+//
+//def sku_id = jsonResponse.data[position]?.id
+//def sku_code = jsonResponse.data[position].sku_code
+//def sku_name = jsonResponse.data[position].sku_name
+//def sku_price = jsonResponse.data[position].normal_price
+//
+//def product_id = jsonResponse.data[position].product_id
+//def product_name = jsonResponse.data[position].product_name
+//
+//def can_pick_quantity = jsonResponse.data[position].can_pick_quantity
+//
+//// Print extracted value to JMeter log for debugging
+//log.info(&quot;===========&gt; sku_id: &quot; + sku_id?.toString())
+//log.info(&quot;===========&gt; sku_code: &quot; + sku_code)
+//log.info(&quot;===========&gt; sku_name: &quot; + sku_name)
+//log.info(&quot;===========&gt; sku_price: &quot; + sku_price)
+//log.info(&quot;===========&gt; product_id: &quot; + product_id)
+//log.info(&quot;===========&gt; product_name: &quot; + product_name)
+//log.info(&quot;===========&gt; can_pick_quantity: &quot; + can_pick_quantity)
+//
+//// Store the extracted value in a JMeter variable
+//vars.put(&quot;sku_id&quot;, sku_id)
+//vars.put(&quot;sku_code&quot;, sku_code)
+//vars.put(&quot;sku_name&quot;, sku_name)
+//vars.put(&quot;sku_price&quot;, sku_price)
+//vars.put(&quot;product_id&quot;, product_id)
+//vars.put(&quot;product_name&quot;, product_name)
+//vars.put(&quot;can_pick_quantity&quot;, can_pick_quantity)</stringProp>
+            </JSR223PostProcessor>
+            <hashTree/>
+            <BeanShellAssertion guiclass="BeanShellAssertionGui" testclass="BeanShellAssertion" testname="BeanShell Assertion" enabled="false">
+              <stringProp name="BeanShellAssertion.query">${__setProperty(C-sku_id,${sku_id})}
+${__setProperty(C-product_id,${product_id})}
+${__setProperty(C-sku_price,${sku_price})}
+${__setProperty(C-product_name,${product_name})}
+${__setProperty(C-sku_name,${sku_name})}
+${__setProperty(C-sku_code,${sku_code})}
+${__setProperty(C-can_pick_quantity,${can_pick_quantity})}</stringProp>
+              <stringProp name="BeanShellAssertion.filename"></stringProp>
+              <stringProp name="BeanShellAssertion.parameters"></stringProp>
+              <boolProp name="BeanShellAssertion.resetInterpreter">false</boolProp>
+            </BeanShellAssertion>
+            <hashTree/>
+          </hashTree>
+          <SwitchController guiclass="SwitchControllerGui" testclass="SwitchController" testname="Switch Controller" enabled="true">
+            <stringProp name="SwitchController.value">${__Random(0,5)}</stringProp>
+            <stringProp name="TestPlan.comments">switch to view list product, list order, list customer, or create product, create customer, create controller</stringProp>
+          </SwitchController>
+          <hashTree>
+            <HTTPSamplerProxy guiclass="HttpTestSampleGui" testclass="HTTPSamplerProxy" testname="create product" enabled="false">
+              <stringProp name="HTTPSampler.domain">${sbh_base_url}</stringProp>
+              <stringProp name="HTTPSampler.path">/finan-product/api/v1/product/create</stringProp>
+              <boolProp name="HTTPSampler.follow_redirects">true</boolProp>
+              <stringProp name="HTTPSampler.method">POST</stringProp>
+              <boolProp name="HTTPSampler.use_keepalive">true</boolProp>
+              <boolProp name="HTTPSampler.postBodyRaw">true</boolProp>
+              <elementProp name="HTTPsampler.Arguments" elementType="Arguments">
+                <collectionProp name="Arguments.arguments">
+                  <elementProp name="" elementType="HTTPArgument">
+                    <boolProp name="HTTPArgument.always_encode">false</boolProp>
+                    <stringProp name="Argument.value">&#xd;
+{&#xd;
+	&quot;name&quot;: &quot;[perf]Product-${randInt}&quot;,&#xd;
+	&quot;product_code&quot;: &quot;SP${randInt}&quot;,&#xd;
+	&quot;product_type&quot;: &quot;non_variant&quot;,&#xd;
+	&quot;uom&quot;: &quot;&quot;,&#xd;
+	&quot;business_id&quot;: &quot;${business_id}&quot;,&#xd;
+	&quot;description&quot;: &quot;&quot;,&#xd;
+	&quot;description_rtf&quot;: &quot;&quot;,&#xd;
+	&quot;images&quot;: [],&#xd;
+	&quot;is_active&quot;: true,&#xd;
+	&quot;list_sku&quot;: [{&#xd;
+		&quot;attribute_types&quot;: [{&#xd;
+			&quot;attribute&quot;: &quot;[perf]Product-${randInt}&quot;,&#xd;
+			&quot;attribute_type&quot;: &quot;default_attribute&quot;&#xd;
+		}],&#xd;
+		&quot;barcode&quot;: &quot;&quot;,&#xd;
+		&quot;business_id&quot;: &quot;${business_id}&quot;,&#xd;
+		&quot;historical_cost&quot;: 0,&#xd;
+		&quot;is_active&quot;: true,&#xd;
+		&quot;uom&quot;: &quot;&quot;,&#xd;
+		&quot;list_sku_uom&quot;: [],&#xd;
+		&quot;media&quot;: [],&#xd;
+		&quot;number_attribute_type&quot;: 1,&#xd;
+		&quot;priority&quot;: 0,&#xd;
+		&quot;selling_price&quot;: 0,&#xd;
+		&quot;normal_price&quot;: ${randInt},&#xd;
+		&quot;wholesale_price&quot;: null,&#xd;
+		&quot;sku_code&quot;: &quot;SP${randInt}&quot;,&#xd;
+		&quot;sku_type&quot;: &quot;non_stock&quot;&#xd;
+	}],&#xd;
+	&quot;show_on_store&quot;: true,&#xd;
+	&quot;has_ingredient&quot;: false,&#xd;
+	&quot;list_variant&quot;: [],&#xd;
+	&quot;category_ids&quot;: []&#xd;
+}&#xd;
+</stringProp>
+                    <stringProp name="Argument.metadata">=</stringProp>
+                  </elementProp>
+                </collectionProp>
+              </elementProp>
+            </HTTPSamplerProxy>
+            <hashTree>
+              <HeaderManager guiclass="HeaderPanel" testclass="HeaderManager" testname="HTTP Header Manager" enabled="true">
+                <collectionProp name="HeaderManager.headers">
+                  <elementProp name="" elementType="Header">
+                    <stringProp name="Header.name">authorization</stringProp>
+                    <stringProp name="Header.value">Bearer ${userToken}</stringProp>
+                  </elementProp>
+                  <elementProp name="" elementType="Header">
+                    <stringProp name="Header.name">content-type</stringProp>
+                    <stringProp name="Header.value">application/json</stringProp>
+                  </elementProp>
+                </collectionProp>
+              </HeaderManager>
+              <hashTree/>
+              <JSR223PreProcessor guiclass="TestBeanGUI" testclass="JSR223PreProcessor" testname="JSR223 PreProcessor" enabled="true">
+                <stringProp name="scriptLanguage">groovy</stringProp>
+                <stringProp name="parameters"></stringProp>
+                <stringProp name="filename"></stringProp>
+                <stringProp name="cacheKey">true</stringProp>
+                <stringProp name="script">// show debug
+def username = vars.get(&quot;username&quot;);
+def randInt = vars.get(&quot;randInt&quot;);
+//println(username + &quot; create product &quot; + randInt);</stringProp>
+              </JSR223PreProcessor>
+              <hashTree/>
+              <JSR223PostProcessor guiclass="TestBeanGUI" testclass="JSR223PostProcessor" testname="JSR223 PostProcessor" enabled="true">
+                <stringProp name="scriptLanguage">groovy</stringProp>
+                <stringProp name="parameters"></stringProp>
+                <stringProp name="filename"></stringProp>
+                <stringProp name="cacheKey">true</stringProp>
+                <stringProp name="script">// Get the response code (e.g., 200, 404, etc.)
+def responseCode = prev.getResponseCode()
+// Get the response message (e.g., &quot;OK&quot;, &quot;Not Found&quot;, etc.)
+def responseMessage = prev.getResponseMessage()
+
+def username = vars.get(&quot;username&quot;);
+if(responseCode != 200 || responseCode != 201){
+	println(&quot;===&gt; [Create product] Thread-&quot; + ${__threadNum} + &quot; (&quot; + username + &quot;) responseMessage: &quot; + responseMessage)
+	log.info(&quot;===&gt; [Create product] Thread-&quot; + ${__threadNum} + &quot; (&quot; + username + &quot;) responseMessage: &quot; + responseMessage)
+} else {
+	println(&quot;===&gt; [Create product] Thread-&quot; + ${__threadNum} + &quot; (&quot; + username + &quot;) responseCode: &quot; + responseCode)
+	log.info(&quot;===&gt; [Create product] Thread-&quot; + ${__threadNum} + &quot; (&quot; + username + &quot;) responseCode: &quot; + responseCode)
+}
+//println(&quot;===&gt; responseMessage: &quot; + responseMessage)</stringProp>
+              </JSR223PostProcessor>
+              <hashTree/>
+            </hashTree>
+            <HTTPSamplerProxy guiclass="HttpTestSampleGui" testclass="HTTPSamplerProxy" testname="create stock product" enabled="true">
+              <stringProp name="HTTPSampler.domain">${sbh_base_url}</stringProp>
+              <stringProp name="HTTPSampler.path">/finan-product/api/v1/product/create</stringProp>
+              <boolProp name="HTTPSampler.follow_redirects">true</boolProp>
+              <stringProp name="HTTPSampler.method">POST</stringProp>
+              <boolProp name="HTTPSampler.use_keepalive">true</boolProp>
+              <boolProp name="HTTPSampler.postBodyRaw">true</boolProp>
+              <elementProp name="HTTPsampler.Arguments" elementType="Arguments">
+                <collectionProp name="Arguments.arguments">
+                  <elementProp name="" elementType="HTTPArgument">
+                    <boolProp name="HTTPArgument.always_encode">false</boolProp>
+                    <stringProp name="Argument.value">&#xd;
+{&#xd;
+	&quot;name&quot;: &quot;[perf]Stock Product-${randInt}&quot;,&#xd;
+	&quot;product_code&quot;: &quot;SP${randInt}&quot;,&#xd;
+	&quot;product_type&quot;: &quot;non_variant&quot;,&#xd;
+	&quot;uom&quot;: &quot;&quot;,&#xd;
+	&quot;business_id&quot;: &quot;${business_id}&quot;,&#xd;
+	&quot;description&quot;: &quot;&quot;,&#xd;
+	&quot;description_rtf&quot;: &quot;&quot;,&#xd;
+	&quot;images&quot;: [],&#xd;
+	&quot;is_active&quot;: true,&#xd;
+	&quot;list_sku&quot;: [{&#xd;
+		&quot;attribute_types&quot;: [{&#xd;
+			&quot;attribute&quot;: &quot;[perf]Stock Product-${randInt}&quot;,&#xd;
+			&quot;attribute_type&quot;: &quot;default_attribute&quot;&#xd;
+		}],&#xd;
+		&quot;barcode&quot;: &quot;&quot;,&#xd;
+		&quot;business_id&quot;: &quot;${business_id}&quot;,&#xd;
+		&quot;historical_cost&quot;: ${history_cost},&#xd;
+		&quot;is_active&quot;: true,&#xd;
+		&quot;uom&quot;: &quot;&quot;,&#xd;
+		&quot;list_sku_uom&quot;: [],&#xd;
+		&quot;media&quot;: [],&#xd;
+		&quot;number_attribute_type&quot;: 1,&#xd;
+		&quot;priority&quot;: 0,&#xd;
+		&quot;selling_price&quot;: 0,&#xd;
+		&quot;normal_price&quot;: ${randInt},&#xd;
+		&quot;wholesale_price&quot;: null,&#xd;
+		&quot;sku_code&quot;: &quot;SP${randInt}&quot;,&#xd;
+		&quot;sku_type&quot;: &quot;stock&quot;,&#xd;
+		&quot;po_details&quot;: {&#xd;
+			&quot;pricing&quot;: ${history_cost},&#xd;
+			&quot;quantity&quot;: 1000000,&#xd;
+			&quot;blocked_quantity&quot;: null,&#xd;
+			&quot;warning_value&quot;: null&#xd;
+		}&#xd;
+	}],&#xd;
+	&quot;show_on_store&quot;: true,&#xd;
+	&quot;has_ingredient&quot;: false,&#xd;
+	&quot;list_variant&quot;: [],&#xd;
+	&quot;category_ids&quot;: []&#xd;
+}</stringProp>
+                    <stringProp name="Argument.metadata">=</stringProp>
+                  </elementProp>
+                </collectionProp>
+              </elementProp>
+            </HTTPSamplerProxy>
+            <hashTree>
+              <HeaderManager guiclass="HeaderPanel" testclass="HeaderManager" testname="HTTP Header Manager" enabled="true">
+                <collectionProp name="HeaderManager.headers">
+                  <elementProp name="" elementType="Header">
+                    <stringProp name="Header.name">authorization</stringProp>
+                    <stringProp name="Header.value">Bearer ${userToken}</stringProp>
+                  </elementProp>
+                  <elementProp name="" elementType="Header">
+                    <stringProp name="Header.name">content-type</stringProp>
+                    <stringProp name="Header.value">application/json</stringProp>
+                  </elementProp>
+                </collectionProp>
+              </HeaderManager>
+              <hashTree/>
+              <JSR223PreProcessor guiclass="TestBeanGUI" testclass="JSR223PreProcessor" testname="JSR223 PreProcessor" enabled="true">
+                <stringProp name="scriptLanguage">groovy</stringProp>
+                <stringProp name="parameters"></stringProp>
+                <stringProp name="filename"></stringProp>
+                <stringProp name="cacheKey">true</stringProp>
+                <stringProp name="script">// show debug
+def username = vars.get(&quot;username&quot;);
+def randInt = vars.get(&quot;randInt&quot;);
+//println(&quot;price: &quot; + randInt.toString());
+
+def history_cost = Math.ceil(Integer.parseInt(randInt) / 2);
+
+vars.put(&quot;history_cost&quot;,history_cost.toString());
+//println(username + &quot; create product &quot; + randInt);</stringProp>
+              </JSR223PreProcessor>
+              <hashTree/>
+              <JSR223PostProcessor guiclass="TestBeanGUI" testclass="JSR223PostProcessor" testname="JSR223 PostProcessor" enabled="true">
+                <stringProp name="scriptLanguage">groovy</stringProp>
+                <stringProp name="parameters"></stringProp>
+                <stringProp name="filename"></stringProp>
+                <stringProp name="cacheKey">true</stringProp>
+                <stringProp name="script">// Get the response code (e.g., 200, 404, etc.)
+def responseCode = prev.getResponseCode()
+// Get the response message (e.g., &quot;OK&quot;, &quot;Not Found&quot;, etc.)
+def responseMessage = prev.getResponseMessage()
+
+def username = vars.get(&quot;username&quot;);
+if(responseCode != 200 || responseCode != 201){
+	println(&quot;===&gt; [Create stock product] Thread-&quot; + ${__threadNum} + &quot; (&quot; + username + &quot;) responseMessage: &quot; + responseMessage)
+	log.info(&quot;===&gt; [Create stock product] Thread-&quot; + ${__threadNum} + &quot; (&quot; + username + &quot;) responseMessage: &quot; + responseMessage)
+} else {
+	println(&quot;===&gt; [Create stock product] Thread-&quot; + ${__threadNum} + &quot; (&quot; + username + &quot;) responseCode: &quot; + responseCode)
+	log.info(&quot;===&gt; [Create stock product] Thread-&quot; + ${__threadNum} + &quot; (&quot; + username + &quot;) responseCode: &quot; + responseCode)
+}
+//println(&quot;===&gt; responseMessage: &quot; + responseMessage)</stringProp>
+              </JSR223PostProcessor>
+              <hashTree/>
+            </hashTree>
+            <HTTPSamplerProxy guiclass="HttpTestSampleGui" testclass="HTTPSamplerProxy" testname="create customer" enabled="true">
+              <stringProp name="HTTPSampler.domain">${sbh_base_url}</stringProp>
+              <stringProp name="HTTPSampler.path">/finan-business/api/v2/contact/create</stringProp>
+              <boolProp name="HTTPSampler.follow_redirects">true</boolProp>
+              <stringProp name="HTTPSampler.method">POST</stringProp>
+              <boolProp name="HTTPSampler.use_keepalive">true</boolProp>
+              <boolProp name="HTTPSampler.postBodyRaw">true</boolProp>
+              <elementProp name="HTTPsampler.Arguments" elementType="Arguments">
+                <collectionProp name="Arguments.arguments">
+                  <elementProp name="" elementType="HTTPArgument">
+                    <boolProp name="HTTPArgument.always_encode">false</boolProp>
+                    <stringProp name="Argument.value">{&#xd;
+	&quot;business_id&quot;:&quot;${business_id}&quot;,&#xd;
+	&quot;name&quot;: &quot;[perf]${name}&quot;,&#xd;
+	&quot;phone_number&quot;: &quot;${phoneNumber}&quot;,&#xd;
+	&quot;address_info&quot;: null&#xd;
+}</stringProp>
+                    <stringProp name="Argument.metadata">=</stringProp>
+                  </elementProp>
+                </collectionProp>
+              </elementProp>
+            </HTTPSamplerProxy>
+            <hashTree>
+              <HeaderManager guiclass="HeaderPanel" testclass="HeaderManager" testname="HTTP Header Manager" enabled="true">
+                <collectionProp name="HeaderManager.headers">
+                  <elementProp name="" elementType="Header">
+                    <stringProp name="Header.name">authorization</stringProp>
+                    <stringProp name="Header.value">Bearer ${userToken}</stringProp>
+                  </elementProp>
+                  <elementProp name="" elementType="Header">
+                    <stringProp name="Header.name">content-type</stringProp>
+                    <stringProp name="Header.value">application/json</stringProp>
+                  </elementProp>
+                </collectionProp>
+              </HeaderManager>
+              <hashTree/>
+              <JSR223PreProcessor guiclass="TestBeanGUI" testclass="JSR223PreProcessor" testname="JSR223 PreProcessor" enabled="true">
+                <stringProp name="scriptLanguage">groovy</stringProp>
+                <stringProp name="parameters"></stringProp>
+                <stringProp name="filename"></stringProp>
+                <stringProp name="cacheKey">true</stringProp>
+                <stringProp name="script">// Function to generate a random integer between min and max (inclusive)
+int getRandomInt(int min, int max) {
+    return Math.floor(Math.random() * (max - min + 1)) as int
+}
+
+// Function to generate a random Vietnamese phone number
+String randomPhone() {
+    // Define the network prefixes
+    def viettel = [&apos;86&apos;, &apos;96&apos;, &apos;97&apos;, &apos;98&apos;, &apos;32&apos;, &apos;33&apos;, &apos;34&apos;, &apos;35&apos;, &apos;36&apos;, &apos;37&apos;, &apos;38&apos;, &apos;39&apos;]
+    def vina = [&apos;88&apos;, &apos;81&apos;, &apos;82&apos;, &apos;83&apos;, &apos;84&apos;, &apos;85&apos;, &apos;91&apos;, &apos;94&apos;]
+    def mobi = [&apos;89&apos;, &apos;90&apos;, &apos;93&apos;, &apos;70&apos;, &apos;76&apos;, &apos;77&apos;, &apos;78&apos;, &apos;79&apos;]
+    def vinamobile = [&apos;92&apos;, &apos;56&apos;, &apos;58&apos;]
+    def gmobile = [&apos;99&apos;, &apos;59&apos;]
+    def itelecom = [&apos;87&apos;]
+
+    // Define phone number format
+    def phoneFormat = [&apos;+84&apos;,&apos;0&apos;]  // Can add &apos;0&apos; if needed
+
+    // Start with the selected phone format
+    def phoneNumber = phoneFormat[getRandomInt(0, phoneFormat.size() - 1)]
+
+    // Combine all network prefixes into a single list
+    def allNet = viettel + vina + mobi + vinamobile + gmobile + itelecom
+
+    // Append a random network prefix
+    phoneNumber += allNet[getRandomInt(0, allNet.size() - 1)]
+
+    // Generate the remaining random digits
+    (1..7).each {
+        phoneNumber += getRandomInt(0, 9)
+    }
+
+    return phoneNumber
+}
+
+def phoneNumber = randomPhone();
+
+vars.put(&quot;name&quot;,&quot;Customer &quot; + phoneNumber);
+vars.put(&quot;phoneNumber&quot;,phoneNumber);
+
+// show debug
+def username = vars.get(&quot;username&quot;);
+//println(username + &quot; create customer with phoneNumber &quot; + phoneNumber);</stringProp>
+              </JSR223PreProcessor>
+              <hashTree/>
+              <JSR223PostProcessor guiclass="TestBeanGUI" testclass="JSR223PostProcessor" testname="JSR223 PostProcessor" enabled="true">
+                <stringProp name="scriptLanguage">groovy</stringProp>
+                <stringProp name="parameters"></stringProp>
+                <stringProp name="filename"></stringProp>
+                <stringProp name="cacheKey">true</stringProp>
+                <stringProp name="script">// Get the response code (e.g., 200, 404, etc.)
+def responseCode = prev.getResponseCode()
+// Get the response message (e.g., &quot;OK&quot;, &quot;Not Found&quot;, etc.)
+def responseMessage = prev.getResponseMessage()
+
+def username = vars.get(&quot;username&quot;);
+if(responseCode != 200 || responseCode != 201){
+	println(&quot;===&gt; [Create customer] Thread-&quot; + ${__threadNum} + &quot; (&quot; + username + &quot;) responseMessage: &quot; + responseMessage)
+	log.info(&quot;===&gt; [Create customer] Thread-&quot; + ${__threadNum} + &quot; (&quot; + username + &quot;) responseMessage: &quot; + responseMessage)
+} else {
+	println(&quot;===&gt; [Create customer] Thread-&quot; + ${__threadNum} + &quot; (&quot; + username + &quot;) responseCode: &quot; + responseCode)
+	log.info(&quot;===&gt; [Create customer] Thread-&quot; + ${__threadNum} + &quot; (&quot; + username + &quot;) responseCode: &quot; + responseCode)
+}
+//println(&quot;===&gt; responseMessage: &quot; + responseMessage)</stringProp>
+              </JSR223PostProcessor>
+              <hashTree/>
+            </hashTree>
+            <HTTPSamplerProxy guiclass="HttpTestSampleGui" testclass="HTTPSamplerProxy" testname="create complete order" enabled="true">
+              <stringProp name="HTTPSampler.domain">${sbh_base_url}</stringProp>
+              <stringProp name="HTTPSampler.path">/finan-order/api/v9/seller/create-order</stringProp>
+              <boolProp name="HTTPSampler.follow_redirects">true</boolProp>
+              <stringProp name="HTTPSampler.method">POST</stringProp>
+              <boolProp name="HTTPSampler.use_keepalive">true</boolProp>
+              <boolProp name="HTTPSampler.postBodyRaw">true</boolProp>
+              <elementProp name="HTTPsampler.Arguments" elementType="Arguments">
+                <collectionProp name="Arguments.arguments">
+                  <elementProp name="" elementType="HTTPArgument">
+                    <boolProp name="HTTPArgument.always_encode">false</boolProp>
+                    <stringProp name="Argument.value">{&#xd;
+	&quot;created_order_at&quot;: &quot;${currentDay}&quot;,&#xd;
+	&quot;business_id&quot;: &quot;${business_id}&quot;,&#xd;
+	&quot;ordered_grand_total&quot;: ${sku_price},&#xd;
+	&quot;promotion_code&quot;: &quot;&quot;,&#xd;
+	&quot;promotion_discount&quot;: 0,&#xd;
+	&quot;other_discount&quot;: 0,&#xd;
+	&quot;delivery_fee&quot;: 0,&#xd;
+	&quot;delivery_method&quot;: &quot;buyer_pick_up&quot;,&#xd;
+	&quot;grand_total&quot;: ${sku_price},&#xd;
+	&quot;note&quot;: &quot;[perf] ${randInt}&quot;,&#xd;
+	&quot;buyer_info&quot;: {&#xd;
+		&quot;phone_number&quot;: &quot;+84907470430&quot;,&#xd;
+		&quot;name&quot;: &quot;[PERF] ChauLe&quot;&#xd;
+	},&#xd;
+	&quot;buyer_id&quot;: null,&#xd;
+	&quot;list_order_item&quot;: [{&#xd;
+		&quot;sku_name&quot;: &quot;${sku_name}&quot;,&#xd;
+		&quot;sku_code&quot;: null,&#xd;
+		&quot;quantity&quot;: 1,&#xd;
+		&quot;note&quot;: null,&#xd;
+		&quot;price&quot;: ${sku_price},&#xd;
+		&quot;product_normal_price&quot;: ${sku_price},&#xd;
+		&quot;product_selling_price&quot;: ${sku_price},&#xd;
+		&quot;product_name&quot;: &quot;${product_name}&quot;,&#xd;
+		&quot;product_images&quot;: [&quot;&quot;],&#xd;
+		&quot;uom&quot;: &quot;Lon&quot;,&#xd;
+		&quot;can_pick_quantity&quot;: 36,&#xd;
+		&quot;type&quot;: &quot;stock&quot;,&#xd;
+		&quot;product_id&quot;: &quot;${product_id}&quot;,&#xd;
+		&quot;order_item_add_on&quot;: [],&#xd;
+		&quot;additional_item_info&quot;: {&#xd;
+			&quot;amount&quot;: 0,&#xd;
+			&quot;type&quot;: &quot;value&quot;,&#xd;
+			&quot;is_gift&quot;: false&#xd;
+		},&#xd;
+		&quot;priority&quot;: 0,&#xd;
+		&quot;sku_id&quot;: &quot;${sku_id}&quot;,&#xd;
+		&quot;sku_uom_id&quot;: null,&#xd;
+		&quot;category_ids&quot;: []&#xd;
+	}],&#xd;
+	&quot;list_product_fast&quot;: [],&#xd;
+	&quot;has_priority&quot;: true,&#xd;
+	&quot;payment_source_id&quot;: &quot;${payment_source_id}&quot;,&#xd;
+	&quot;payment_source_name&quot;: &quot;Tiền mặt&quot;,&#xd;
+	&quot;payment_method&quot;: &quot;Tiền mặt&quot;,&#xd;
+	&quot;buyer_received&quot;: false,&#xd;
+	&quot;create_method&quot;: &quot;seller&quot;,&#xd;
+	&quot;images&quot;: [],&#xd;
+	&quot;debit&quot;: {&#xd;
+		&quot;buyer_pay&quot;: ${sku_price}&#xd;
+	},&#xd;
+	&quot;additional_info&quot;: {&#xd;
+		&quot;given_amount&quot;: 0,&#xd;
+		&quot;discount_type&quot;: &quot;value&quot;&#xd;
+	},&#xd;
+	&quot;state&quot;: &quot;${state}&quot;,&#xd;
+	&quot;is_wholesale_price&quot;: false,&#xd;
+	&quot;is_customer_point&quot;: false,&#xd;
+	&quot;customer_point&quot;: 0,&#xd;
+	&quot;customer_point_discount&quot;: 0,&#xd;
+	&quot;reservation_info&quot;: {},&#xd;
+	&quot;list_surcharge&quot;: [],&#xd;
+	&quot;surcharge&quot;: 0&#xd;
+}</stringProp>
+                    <stringProp name="Argument.metadata">=</stringProp>
+                  </elementProp>
+                </collectionProp>
+              </elementProp>
+            </HTTPSamplerProxy>
+            <hashTree>
+              <HeaderManager guiclass="HeaderPanel" testclass="HeaderManager" testname="HTTP Header Manager" enabled="true">
+                <collectionProp name="HeaderManager.headers">
+                  <elementProp name="" elementType="Header">
+                    <stringProp name="Header.name">authorization</stringProp>
+                    <stringProp name="Header.value">Bearer ${userToken}</stringProp>
+                  </elementProp>
+                  <elementProp name="" elementType="Header">
+                    <stringProp name="Header.name">content-type</stringProp>
+                    <stringProp name="Header.value">application/json</stringProp>
+                  </elementProp>
+                  <elementProp name="" elementType="Header">
+                    <stringProp name="Header.name">x-current-version</stringProp>
+                    <stringProp name="Header.value">${x-current-version}</stringProp>
+                  </elementProp>
+                </collectionProp>
+              </HeaderManager>
+              <hashTree/>
+              <JSR223PreProcessor guiclass="TestBeanGUI" testclass="JSR223PreProcessor" testname="JSR223 PreProcessor" enabled="true">
+                <stringProp name="scriptLanguage">groovy</stringProp>
+                <stringProp name="parameters"></stringProp>
+                <stringProp name="filename"></stringProp>
+                <stringProp name="cacheKey">true</stringProp>
+                <stringProp name="script">// Import necessary classes
+import java.time.LocalDate;
+import java.util.Locale;
+
+// Get the current date
+def date = new Date()
+def value_at = date.format(&quot;yyyy-MM-dd&apos;T&apos;HH:mm:ss&apos;Z&apos;&quot;, TimeZone.getTimeZone(&apos;UTC&apos;))
+
+// Log the current day for verification
+log.info(&quot;Current Day: &quot; + value_at);
+
+// Optionally, set the current day to a JMeter variable
+vars.put(&quot;currentDay&quot;, value_at);
+
+// show debug
+def username = vars.get(&quot;username&quot;);
+//println(username + &quot; create order with sku_id &quot; + sku_id);
+
+def sku_id = vars.get(&quot;sku_id&quot;)
+log.info(&quot;===========&gt; sku_id: &quot; + sku_id)
+
+def product_id = vars.get(&quot;product_id&quot;)
+log.info(&quot;===========&gt; product_id: &quot; + product_id)
+
+// Function to get a random integer between min and max, inclusive
+def getRandomInt(int min, int max) {
+    return (Math.random() * (max - min + 1)).intValue() + min
+}
+
+// List of states
+def states = [&quot;delivering&quot;, &quot;complete&quot;]
+
+// Selecting a random state from the list
+def state = states[getRandomInt(0, states.size() - 1)]
+vars.put(&quot;state&quot;, state);
+</stringProp>
+              </JSR223PreProcessor>
+              <hashTree/>
+              <JSR223PostProcessor guiclass="TestBeanGUI" testclass="JSR223PostProcessor" testname="JSR223 PostProcessor" enabled="true">
+                <stringProp name="scriptLanguage">groovy</stringProp>
+                <stringProp name="parameters"></stringProp>
+                <stringProp name="filename"></stringProp>
+                <stringProp name="cacheKey">true</stringProp>
+                <stringProp name="script">// Get the response code (e.g., 200, 404, etc.)
+def responseCode = prev.getResponseCode()
+// Get the response message (e.g., &quot;OK&quot;, &quot;Not Found&quot;, etc.)
+def responseMessage = prev.getResponseMessage()
+
+def username = vars.get(&quot;username&quot;);
+if(responseCode != 200 || responseCode != 201){
+	println(&quot;===&gt; [Create order] Thread-&quot; + ${__threadNum} + &quot; (&quot; + username + &quot;) responseMessage: &quot; + responseMessage)
+	log.info(&quot;===&gt; [Create order] Thread-&quot; + ${__threadNum} + &quot; (&quot; + username + &quot;) responseMessage: &quot; + responseMessage)
+} else {
+	println(&quot;===&gt; [Create order] Thread-&quot; + ${__threadNum} + &quot; (&quot; + username + &quot;) responseCode: &quot; + responseCode)
+	log.info(&quot;===&gt; [Create order] Thread-&quot; + ${__threadNum} + &quot; (&quot; + username + &quot;) responseCode: &quot; + responseCode)
+}
+//println(&quot;===&gt; responseMessage: &quot; + responseMessage)</stringProp>
+              </JSR223PostProcessor>
+              <hashTree/>
+            </hashTree>
+            <HTTPSamplerProxy guiclass="HttpTestSampleGui" testclass="HTTPSamplerProxy" testname="get list product" enabled="true">
+              <stringProp name="HTTPSampler.domain">${sbh_base_url}</stringProp>
+              <stringProp name="HTTPSampler.path">/finan-product/api/v1/product/get-all-product-in-stock</stringProp>
+              <boolProp name="HTTPSampler.follow_redirects">true</boolProp>
+              <stringProp name="HTTPSampler.method">GET</stringProp>
+              <boolProp name="HTTPSampler.use_keepalive">true</boolProp>
+              <boolProp name="HTTPSampler.postBodyRaw">false</boolProp>
+              <elementProp name="HTTPsampler.Arguments" elementType="Arguments" guiclass="HTTPArgumentsPanel" testclass="Arguments" testname="User Defined Variables">
+                <collectionProp name="Arguments.arguments">
+                  <elementProp name="business_id" elementType="HTTPArgument">
+                    <boolProp name="HTTPArgument.always_encode">true</boolProp>
+                    <stringProp name="Argument.value">${business_id}</stringProp>
+                    <stringProp name="Argument.metadata">=</stringProp>
+                    <boolProp name="HTTPArgument.use_equals">true</boolProp>
+                    <stringProp name="Argument.name">business_id</stringProp>
+                  </elementProp>
+                  <elementProp name="page" elementType="HTTPArgument">
+                    <boolProp name="HTTPArgument.always_encode">true</boolProp>
+                    <stringProp name="Argument.value">1</stringProp>
+                    <stringProp name="Argument.metadata">=</stringProp>
+                    <boolProp name="HTTPArgument.use_equals">true</boolProp>
+                    <stringProp name="Argument.name">page</stringProp>
+                  </elementProp>
+                  <elementProp name="page_size" elementType="HTTPArgument">
+                    <boolProp name="HTTPArgument.always_encode">true</boolProp>
+                    <stringProp name="Argument.value">100</stringProp>
+                    <stringProp name="Argument.metadata">=</stringProp>
+                    <boolProp name="HTTPArgument.use_equals">true</boolProp>
+                    <stringProp name="Argument.name">page_size</stringProp>
+                  </elementProp>
+                  <elementProp name="sort" elementType="HTTPArgument">
+                    <boolProp name="HTTPArgument.always_encode">true</boolProp>
+                    <stringProp name="Argument.value">priority asc</stringProp>
+                    <stringProp name="Argument.metadata">=</stringProp>
+                    <boolProp name="HTTPArgument.use_equals">true</boolProp>
+                    <stringProp name="Argument.name">sort</stringProp>
+                  </elementProp>
+                  <elementProp name="search" elementType="HTTPArgument">
+                    <boolProp name="HTTPArgument.always_encode">true</boolProp>
+                    <stringProp name="Argument.value">${search_text}</stringProp>
+                    <stringProp name="Argument.metadata">=</stringProp>
+                    <boolProp name="HTTPArgument.use_equals">true</boolProp>
+                    <stringProp name="Argument.name">search</stringProp>
+                  </elementProp>
+                </collectionProp>
+              </elementProp>
+            </HTTPSamplerProxy>
+            <hashTree>
+              <HeaderManager guiclass="HeaderPanel" testclass="HeaderManager" testname="HTTP Header Manager" enabled="true">
+                <collectionProp name="HeaderManager.headers">
+                  <elementProp name="" elementType="Header">
+                    <stringProp name="Header.name">authorization</stringProp>
+                    <stringProp name="Header.value">Bearer ${userToken}</stringProp>
+                  </elementProp>
+                  <elementProp name="" elementType="Header">
+                    <stringProp name="Header.name">content-type</stringProp>
+                    <stringProp name="Header.value">application/json</stringProp>
+                  </elementProp>
+                  <elementProp name="" elementType="Header">
+                    <stringProp name="Header.name">x-current-version</stringProp>
+                    <stringProp name="Header.value">${x-current-version}</stringProp>
+                  </elementProp>
+                </collectionProp>
+              </HeaderManager>
+              <hashTree/>
+              <JSR223PreProcessor guiclass="TestBeanGUI" testclass="JSR223PreProcessor" testname="JSR223 PreProcessor" enabled="true">
+                <stringProp name="scriptLanguage">groovy</stringProp>
+                <stringProp name="parameters"></stringProp>
+                <stringProp name="filename"></stringProp>
+                <stringProp name="cacheKey">true</stringProp>
+                <stringProp name="script">// Function to generate a random string of specified length
+String randomChars(int length) {
+    // Define the characters to use for the random string
+    def characters = &quot;ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789&quot;
+    def charactersLength = characters.length()
+
+    // Initialize an empty StringBuilder to store the result
+    def result = new StringBuilder()
+
+    // Loop to generate random characters
+    for (int i = 0; i &lt; length; i++) {
+        // Append a random character to the result
+        result.append(characters[(Math.random() * charactersLength) as int])
+    }
+
+    // Return the final random string
+    return result.toString()
+}
+
+int getRandomInt(int min, int max) {
+    return Math.floor(Math.random() * (max - min + 1)) + min as int
+}
+
+def value = getRandomInt(1,3);
+def search_text = &quot;&quot;;
+switch (value) {
+    case 1:
+//        println &quot;search_text is null&quot;
+        break
+    case 2:
+    	   search_text = randomChars(2)
+        break
+    default:
+	   search_text = randomChars(3)
+}
+
+vars.put(&quot;search_text&quot;, search_text);
+
+// show debug
+def username = vars.get(&quot;username&quot;);
+//println(username + &quot; search_text: &quot; + search_text)</stringProp>
+              </JSR223PreProcessor>
+              <hashTree/>
+              <JSR223PostProcessor guiclass="TestBeanGUI" testclass="JSR223PostProcessor" testname="JSR223 PostProcessor" enabled="true">
+                <stringProp name="scriptLanguage">groovy</stringProp>
+                <stringProp name="parameters"></stringProp>
+                <stringProp name="filename"></stringProp>
+                <stringProp name="cacheKey">true</stringProp>
+                <stringProp name="script">// Get the response code (e.g., 200, 404, etc.)
+def responseCode = prev.getResponseCode()
+// Get the response message (e.g., &quot;OK&quot;, &quot;Not Found&quot;, etc.)
+def responseMessage = prev.getResponseMessage()
+
+def username = vars.get(&quot;username&quot;);
+if(responseCode != 200){
+	println(&quot;===&gt; [Get product] Thread-&quot; + ${__threadNum} + &quot; (&quot; + username + &quot;) responseMessage: &quot; + responseMessage)
+	log.info(&quot;===&gt; [Get product] Thread-&quot; + ${__threadNum} + &quot; (&quot; + username + &quot;) responseMessage: &quot; + responseMessage)
+} else {
+	println(&quot;===&gt; [Get product] Thread-&quot; + ${__threadNum} + &quot; (&quot; + username + &quot;) responseCode: &quot; + responseCode)
+	log.info(&quot;===&gt; [Get product] Thread-&quot; + ${__threadNum} + &quot; (&quot; + username + &quot;) responseCode: &quot; + responseCode)
+}
+//println(&quot;===&gt; responseMessage: &quot; + responseMessage)</stringProp>
+              </JSR223PostProcessor>
+              <hashTree/>
+            </hashTree>
+            <HTTPSamplerProxy guiclass="HttpTestSampleGui" testclass="HTTPSamplerProxy" testname="get list customer" enabled="true">
+              <stringProp name="HTTPSampler.domain">${sbh_base_url}</stringProp>
+              <stringProp name="HTTPSampler.path">/finan-business/api/v1/contact/get-list</stringProp>
+              <boolProp name="HTTPSampler.follow_redirects">true</boolProp>
+              <stringProp name="HTTPSampler.method">GET</stringProp>
+              <boolProp name="HTTPSampler.use_keepalive">true</boolProp>
+              <boolProp name="HTTPSampler.postBodyRaw">false</boolProp>
+              <elementProp name="HTTPsampler.Arguments" elementType="Arguments" guiclass="HTTPArgumentsPanel" testclass="Arguments" testname="User Defined Variables">
+                <collectionProp name="Arguments.arguments">
+                  <elementProp name="business_id" elementType="HTTPArgument">
+                    <boolProp name="HTTPArgument.always_encode">true</boolProp>
+                    <stringProp name="Argument.value">${business_id}</stringProp>
+                    <stringProp name="Argument.metadata">=</stringProp>
+                    <boolProp name="HTTPArgument.use_equals">true</boolProp>
+                    <stringProp name="Argument.name">business_id</stringProp>
+                  </elementProp>
+                  <elementProp name="page" elementType="HTTPArgument">
+                    <boolProp name="HTTPArgument.always_encode">true</boolProp>
+                    <stringProp name="Argument.value">1</stringProp>
+                    <stringProp name="Argument.metadata">=</stringProp>
+                    <boolProp name="HTTPArgument.use_equals">true</boolProp>
+                    <stringProp name="Argument.name">page</stringProp>
+                  </elementProp>
+                  <elementProp name="page_size" elementType="HTTPArgument">
+                    <boolProp name="HTTPArgument.always_encode">true</boolProp>
+                    <stringProp name="Argument.value">100</stringProp>
+                    <stringProp name="Argument.metadata">=</stringProp>
+                    <boolProp name="HTTPArgument.use_equals">true</boolProp>
+                    <stringProp name="Argument.name">page_size</stringProp>
+                  </elementProp>
+                  <elementProp name="sort" elementType="HTTPArgument">
+                    <boolProp name="HTTPArgument.always_encode">true</boolProp>
+                    <stringProp name="Argument.value">priority asc</stringProp>
+                    <stringProp name="Argument.metadata">=</stringProp>
+                    <boolProp name="HTTPArgument.use_equals">true</boolProp>
+                    <stringProp name="Argument.name">sort</stringProp>
+                  </elementProp>
+                  <elementProp name="search" elementType="HTTPArgument">
+                    <boolProp name="HTTPArgument.always_encode">true</boolProp>
+                    <stringProp name="Argument.value">${search_cus}</stringProp>
+                    <stringProp name="Argument.metadata">=</stringProp>
+                    <boolProp name="HTTPArgument.use_equals">true</boolProp>
+                    <stringProp name="Argument.name">search</stringProp>
+                  </elementProp>
+                </collectionProp>
+              </elementProp>
+            </HTTPSamplerProxy>
+            <hashTree>
+              <HeaderManager guiclass="HeaderPanel" testclass="HeaderManager" testname="HTTP Header Manager" enabled="true">
+                <collectionProp name="HeaderManager.headers">
+                  <elementProp name="" elementType="Header">
+                    <stringProp name="Header.name">authorization</stringProp>
+                    <stringProp name="Header.value">Bearer ${userToken}</stringProp>
+                  </elementProp>
+                  <elementProp name="" elementType="Header">
+                    <stringProp name="Header.name">content-type</stringProp>
+                    <stringProp name="Header.value">application/json</stringProp>
+                  </elementProp>
+                  <elementProp name="" elementType="Header">
+                    <stringProp name="Header.name">x-current-version</stringProp>
+                    <stringProp name="Header.value">${x-current-version}</stringProp>
+                  </elementProp>
+                </collectionProp>
+              </HeaderManager>
+              <hashTree/>
+              <JSR223PreProcessor guiclass="TestBeanGUI" testclass="JSR223PreProcessor" testname="JSR223 PreProcessor" enabled="true">
+                <stringProp name="scriptLanguage">groovy</stringProp>
+                <stringProp name="parameters"></stringProp>
+                <stringProp name="filename"></stringProp>
+                <stringProp name="cacheKey">true</stringProp>
+                <stringProp name="script">// Function to generate a random string of specified length
+String randomChars(int length) {
+    // Define the characters to use for the random string
+    def characters = &quot;ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789&quot;
+    def charactersLength = characters.length()
+
+    // Initialize an empty StringBuilder to store the result
+    def result = new StringBuilder()
+
+    // Loop to generate random characters
+    for (int i = 0; i &lt; length; i++) {
+        // Append a random character to the result
+        result.append(characters[(Math.random() * charactersLength) as int])
+    }
+
+    // Return the final random string
+    return result.toString()
+}
+
+int getRandomInt(int min, int max) {
+    return Math.floor(Math.random() * (max - min + 1)) + min as int
+}
+
+def value = getRandomInt(1,3);
+def search_cus = &quot;&quot;;
+switch (value) {
+    case 1:
+//        println &quot;search_text is null&quot;
+        break
+    case 2:
+    	   search_cus = randomChars(2)
+        break
+    default:
+	   search_cus = randomChars(3)
+}
+
+vars.put(&quot;search_cus&quot;, search_cus);
+
+// show debug
+def username = vars.get(&quot;username&quot;);
+//println(username + &quot; search_cus: &quot; + search_cus)</stringProp>
+              </JSR223PreProcessor>
+              <hashTree/>
+              <JSR223PostProcessor guiclass="TestBeanGUI" testclass="JSR223PostProcessor" testname="JSR223 PostProcessor" enabled="true">
+                <stringProp name="scriptLanguage">groovy</stringProp>
+                <stringProp name="parameters"></stringProp>
+                <stringProp name="filename"></stringProp>
+                <stringProp name="cacheKey">true</stringProp>
+                <stringProp name="script">// Get the response code (e.g., 200, 404, etc.)
+def responseCode = prev.getResponseCode()
+// Get the response message (e.g., &quot;OK&quot;, &quot;Not Found&quot;, etc.)
+def responseMessage = prev.getResponseMessage()
+
+def username = vars.get(&quot;username&quot;);
+if(responseCode != 200){
+	println(&quot;===&gt; [Get customer] Thread-&quot; + ${__threadNum} + &quot; (&quot; + username + &quot;) responseMessage: &quot; + responseMessage)
+	log.info(&quot;===&gt; [Get customer] Thread-&quot; + ${__threadNum} + &quot; (&quot; + username + &quot;) responseMessage: &quot; + responseMessage)
+} else {
+	println(&quot;===&gt; [Get customer] Thread-&quot; + ${__threadNum} + &quot; (&quot; + username + &quot;) responseCode: &quot; + responseCode)
+	log.info(&quot;===&gt; [Get customer] Thread-&quot; + ${__threadNum} + &quot; (&quot; + username + &quot;) responseCode: &quot; + responseCode)
+}
+//println(&quot;===&gt; responseMessage: &quot; + responseMessage)</stringProp>
+              </JSR223PostProcessor>
+              <hashTree/>
+            </hashTree>
+            <HTTPSamplerProxy guiclass="HttpTestSampleGui" testclass="HTTPSamplerProxy" testname="get list order" enabled="true">
+              <stringProp name="HTTPSampler.domain">${sbh_base_url}</stringProp>
+              <stringProp name="HTTPSampler.path">/finan-order/api/v4/get-list-order</stringProp>
+              <boolProp name="HTTPSampler.follow_redirects">true</boolProp>
+              <stringProp name="HTTPSampler.method">GET</stringProp>
+              <boolProp name="HTTPSampler.use_keepalive">true</boolProp>
+              <boolProp name="HTTPSampler.postBodyRaw">false</boolProp>
+              <elementProp name="HTTPsampler.Arguments" elementType="Arguments" guiclass="HTTPArgumentsPanel" testclass="Arguments" testname="User Defined Variables">
+                <collectionProp name="Arguments.arguments">
+                  <elementProp name="business_id" elementType="HTTPArgument">
+                    <boolProp name="HTTPArgument.always_encode">true</boolProp>
+                    <stringProp name="Argument.value">${business_id}</stringProp>
+                    <stringProp name="Argument.metadata">=</stringProp>
+                    <boolProp name="HTTPArgument.use_equals">true</boolProp>
+                    <stringProp name="Argument.name">business_id</stringProp>
+                  </elementProp>
+                  <elementProp name="page" elementType="HTTPArgument">
+                    <boolProp name="HTTPArgument.always_encode">true</boolProp>
+                    <stringProp name="Argument.value">1</stringProp>
+                    <stringProp name="Argument.metadata">=</stringProp>
+                    <boolProp name="HTTPArgument.use_equals">true</boolProp>
+                    <stringProp name="Argument.name">page</stringProp>
+                  </elementProp>
+                  <elementProp name="page_size" elementType="HTTPArgument">
+                    <boolProp name="HTTPArgument.always_encode">true</boolProp>
+                    <stringProp name="Argument.value">100</stringProp>
+                    <stringProp name="Argument.metadata">=</stringProp>
+                    <boolProp name="HTTPArgument.use_equals">true</boolProp>
+                    <stringProp name="Argument.name">page_size</stringProp>
+                  </elementProp>
+                  <elementProp name="sort" elementType="HTTPArgument">
+                    <boolProp name="HTTPArgument.always_encode">true</boolProp>
+                    <stringProp name="Argument.value">created_order_at desc</stringProp>
+                    <stringProp name="Argument.metadata">=</stringProp>
+                    <boolProp name="HTTPArgument.use_equals">true</boolProp>
+                    <stringProp name="Argument.name">sort</stringProp>
+                  </elementProp>
+                  <elementProp name="state" elementType="HTTPArgument">
+                    <boolProp name="HTTPArgument.always_encode">false</boolProp>
+                    <stringProp name="Argument.value">waiting_confirm,delivering,complete,return,refund</stringProp>
+                    <stringProp name="Argument.metadata">=</stringProp>
+                    <boolProp name="HTTPArgument.use_equals">true</boolProp>
+                    <stringProp name="Argument.name">state</stringProp>
+                  </elementProp>
+                  <elementProp name="hide_item" elementType="HTTPArgument">
+                    <boolProp name="HTTPArgument.always_encode">false</boolProp>
+                    <stringProp name="Argument.value">true</stringProp>
+                    <stringProp name="Argument.metadata">=</stringProp>
+                    <boolProp name="HTTPArgument.use_equals">true</boolProp>
+                    <stringProp name="Argument.name">hide_item</stringProp>
+                  </elementProp>
+                  <elementProp name="delivery_method" elementType="HTTPArgument">
+                    <boolProp name="HTTPArgument.always_encode">false</boolProp>
+                    <stringProp name="Argument.value">all</stringProp>
+                    <stringProp name="Argument.metadata">=</stringProp>
+                    <boolProp name="HTTPArgument.use_equals">true</boolProp>
+                    <stringProp name="Argument.name">delivery_method</stringProp>
+                  </elementProp>
+                  <elementProp name="search" elementType="HTTPArgument">
+                    <boolProp name="HTTPArgument.always_encode">true</boolProp>
+                    <stringProp name="Argument.value">${search_ord}</stringProp>
+                    <stringProp name="Argument.metadata">=</stringProp>
+                    <boolProp name="HTTPArgument.use_equals">true</boolProp>
+                    <stringProp name="Argument.name">search</stringProp>
+                  </elementProp>
+                </collectionProp>
+              </elementProp>
+            </HTTPSamplerProxy>
+            <hashTree>
+              <HeaderManager guiclass="HeaderPanel" testclass="HeaderManager" testname="HTTP Header Manager" enabled="true">
+                <collectionProp name="HeaderManager.headers">
+                  <elementProp name="" elementType="Header">
+                    <stringProp name="Header.name">authorization</stringProp>
+                    <stringProp name="Header.value">Bearer ${userToken}</stringProp>
+                  </elementProp>
+                  <elementProp name="" elementType="Header">
+                    <stringProp name="Header.name">content-type</stringProp>
+                    <stringProp name="Header.value">application/json</stringProp>
+                  </elementProp>
+                  <elementProp name="" elementType="Header">
+                    <stringProp name="Header.name">x-current-version</stringProp>
+                    <stringProp name="Header.value">${x-current-version}</stringProp>
+                  </elementProp>
+                </collectionProp>
+              </HeaderManager>
+              <hashTree/>
+              <JSR223PreProcessor guiclass="TestBeanGUI" testclass="JSR223PreProcessor" testname="JSR223 PreProcessor" enabled="true">
+                <stringProp name="scriptLanguage">groovy</stringProp>
+                <stringProp name="parameters"></stringProp>
+                <stringProp name="filename"></stringProp>
+                <stringProp name="cacheKey">true</stringProp>
+                <stringProp name="script">// Function to generate a random string of specified length
+String randomChars(int length) {
+    // Define the characters to use for the random string
+    def characters = &quot;ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789&quot;
+    def charactersLength = characters.length()
+
+    // Initialize an empty StringBuilder to store the result
+    def result = new StringBuilder()
+
+    // Loop to generate random characters
+    for (int i = 0; i &lt; length; i++) {
+        // Append a random character to the result
+        result.append(characters[(Math.random() * charactersLength) as int])
+    }
+
+    // Return the final random string
+    return result.toString()
+}
+
+int getRandomInt(int min, int max) {
+    return Math.floor(Math.random() * (max - min + 1)) + min as int
+}
+
+def value = getRandomInt(1,3);
+def search_ord = &quot;&quot;;
+switch (value) {
+    case 1:
+//        println &quot;search_text is null&quot;
+        break
+    case 2:
+    	   search_ord = randomChars(2)
+        break
+    default:
+	   search_ord = randomChars(3)
+}
+vars.put(&quot;search_ord&quot;, search_ord);
+
+// show debug
+def username = vars.get(&quot;username&quot;);
+//println(username + &quot; search_ord: &quot; + search_ord)</stringProp>
+              </JSR223PreProcessor>
+              <hashTree/>
+              <JSR223PostProcessor guiclass="TestBeanGUI" testclass="JSR223PostProcessor" testname="JSR223 PostProcessor" enabled="true">
+                <stringProp name="scriptLanguage">groovy</stringProp>
+                <stringProp name="parameters"></stringProp>
+                <stringProp name="filename"></stringProp>
+                <stringProp name="cacheKey">true</stringProp>
+                <stringProp name="script">// Get the response code (e.g., 200, 404, etc.)
+def responseCode = prev.getResponseCode()
+// Get the response message (e.g., &quot;OK&quot;, &quot;Not Found&quot;, etc.)
+def responseMessage = prev.getResponseMessage()
+
+def username = vars.get(&quot;username&quot;);
+if(responseCode != 200){
+	println(&quot;===&gt; [Get order] Thread-&quot; + ${__threadNum} + &quot; (&quot; + username + &quot;) responseMessage: &quot; + responseMessage)
+	log.info(&quot;===&gt; [Get order] Thread-&quot; + ${__threadNum} + &quot; (&quot; + username + &quot;) responseMessage: &quot; + responseMessage)
+} else {
+	println(&quot;===&gt; [Get order] Thread-&quot; + ${__threadNum} + &quot; (&quot; + username + &quot;) responseCode: &quot; + responseCode)
+	log.info(&quot;===&gt; [Get order] Thread-&quot; + ${__threadNum} + &quot; (&quot; + username + &quot;) responseCode: &quot; + responseCode)
+}
+//println(&quot;===&gt; responseMessage: &quot; + responseMessage)</stringProp>
+              </JSR223PostProcessor>
+              <hashTree/>
+            </hashTree>
+            <HTTPSamplerProxy guiclass="HttpTestSampleGui" testclass="HTTPSamplerProxy" testname="get profit and loss" enabled="false">
+              <stringProp name="HTTPSampler.domain">${sbh_base_url}</stringProp>
+              <stringProp name="HTTPSampler.path">/finan-order-config/api/v1/report/get-list-profit-loss</stringProp>
+              <boolProp name="HTTPSampler.follow_redirects">true</boolProp>
+              <stringProp name="HTTPSampler.method">GET</stringProp>
+              <boolProp name="HTTPSampler.use_keepalive">true</boolProp>
+              <boolProp name="HTTPSampler.postBodyRaw">false</boolProp>
+              <elementProp name="HTTPsampler.Arguments" elementType="Arguments" guiclass="HTTPArgumentsPanel" testclass="Arguments" testname="User Defined Variables">
+                <collectionProp name="Arguments.arguments">
+                  <elementProp name="business_id" elementType="HTTPArgument">
+                    <boolProp name="HTTPArgument.always_encode">true</boolProp>
+                    <stringProp name="Argument.value">${business_id}</stringProp>
+                    <stringProp name="Argument.metadata">=</stringProp>
+                    <boolProp name="HTTPArgument.use_equals">true</boolProp>
+                    <stringProp name="Argument.name">business_id</stringProp>
+                  </elementProp>
+                  <elementProp name="page" elementType="HTTPArgument">
+                    <boolProp name="HTTPArgument.always_encode">true</boolProp>
+                    <stringProp name="Argument.value">1</stringProp>
+                    <stringProp name="Argument.metadata">=</stringProp>
+                    <boolProp name="HTTPArgument.use_equals">true</boolProp>
+                    <stringProp name="Argument.name">page</stringProp>
+                  </elementProp>
+                  <elementProp name="page_size" elementType="HTTPArgument">
+                    <boolProp name="HTTPArgument.always_encode">true</boolProp>
+                    <stringProp name="Argument.value">100</stringProp>
+                    <stringProp name="Argument.metadata">=</stringProp>
+                    <boolProp name="HTTPArgument.use_equals">true</boolProp>
+                    <stringProp name="Argument.name">page_size</stringProp>
+                  </elementProp>
+                  <elementProp name="sort" elementType="HTTPArgument">
+                    <boolProp name="HTTPArgument.always_encode">true</boolProp>
+                    <stringProp name="Argument.value">total_price desc</stringProp>
+                    <stringProp name="Argument.metadata">=</stringProp>
+                    <boolProp name="HTTPArgument.use_equals">true</boolProp>
+                    <stringProp name="Argument.name">sort</stringProp>
+                  </elementProp>
+                  <elementProp name="start_time" elementType="HTTPArgument">
+                    <boolProp name="HTTPArgument.always_encode">false</boolProp>
+                    <stringProp name="Argument.value">2024-09-30T17:00:00Z</stringProp>
+                    <stringProp name="Argument.metadata">=</stringProp>
+                    <boolProp name="HTTPArgument.use_equals">true</boolProp>
+                    <stringProp name="Argument.name">start_time</stringProp>
+                  </elementProp>
+                  <elementProp name="option" elementType="HTTPArgument">
+                    <boolProp name="HTTPArgument.always_encode">false</boolProp>
+                    <stringProp name="Argument.value">product</stringProp>
+                    <stringProp name="Argument.metadata">=</stringProp>
+                    <boolProp name="HTTPArgument.use_equals">true</boolProp>
+                    <stringProp name="Argument.name">option</stringProp>
+                  </elementProp>
+                  <elementProp name="end_time" elementType="HTTPArgument">
+                    <boolProp name="HTTPArgument.always_encode">true</boolProp>
+                    <stringProp name="Argument.value">2024-10-31T16:59:59Z</stringProp>
+                    <stringProp name="Argument.metadata">=</stringProp>
+                    <boolProp name="HTTPArgument.use_equals">true</boolProp>
+                    <stringProp name="Argument.name">end_time</stringProp>
+                  </elementProp>
+                </collectionProp>
+              </elementProp>
+            </HTTPSamplerProxy>
+            <hashTree>
+              <HeaderManager guiclass="HeaderPanel" testclass="HeaderManager" testname="HTTP Header Manager" enabled="true">
+                <collectionProp name="HeaderManager.headers">
+                  <elementProp name="" elementType="Header">
+                    <stringProp name="Header.name">authorization</stringProp>
+                    <stringProp name="Header.value">Bearer ${userToken}</stringProp>
+                  </elementProp>
+                  <elementProp name="" elementType="Header">
+                    <stringProp name="Header.name">content-type</stringProp>
+                    <stringProp name="Header.value">application/json</stringProp>
+                  </elementProp>
+                  <elementProp name="" elementType="Header">
+                    <stringProp name="Header.name">x-current-version</stringProp>
+                    <stringProp name="Header.value">${x-current-version}</stringProp>
+                  </elementProp>
+                </collectionProp>
+              </HeaderManager>
+              <hashTree/>
+              <JSR223PreProcessor guiclass="TestBeanGUI" testclass="JSR223PreProcessor" testname="JSR223 PreProcessor" enabled="true">
+                <stringProp name="scriptLanguage">groovy</stringProp>
+                <stringProp name="parameters"></stringProp>
+                <stringProp name="filename"></stringProp>
+                <stringProp name="cacheKey">true</stringProp>
+                <stringProp name="script"></stringProp>
+              </JSR223PreProcessor>
+              <hashTree/>
+              <JSR223PostProcessor guiclass="TestBeanGUI" testclass="JSR223PostProcessor" testname="JSR223 PostProcessor" enabled="true">
+                <stringProp name="scriptLanguage">groovy</stringProp>
+                <stringProp name="parameters"></stringProp>
+                <stringProp name="filename"></stringProp>
+                <stringProp name="cacheKey">true</stringProp>
+                <stringProp name="script">// Get the response code (e.g., 200, 404, etc.)
+def responseCode = prev.getResponseCode()
+// Get the response message (e.g., &quot;OK&quot;, &quot;Not Found&quot;, etc.)
+def responseMessage = prev.getResponseMessage()
+
+def username = vars.get(&quot;username&quot;);
+if(responseCode != 200){
+	println(&quot;===&gt; [Get profit and loss] Thread-&quot; + ${__threadNum} + &quot; (&quot; + username + &quot;) responseMessage: &quot; + responseMessage)
+	log.info(&quot;===&gt; [Get profit and loss] Thread-&quot; + ${__threadNum} + &quot; (&quot; + username + &quot;) responseMessage: &quot; + responseMessage)
+} else {
+	println(&quot;===&gt; [Get profit and loss] Thread-&quot; + ${__threadNum} + &quot; (&quot; + username + &quot;) responseCode: &quot; + responseCode)
+	log.info(&quot;===&gt; [Get profit and loss] Thread-&quot; + ${__threadNum} + &quot; (&quot; + username + &quot;) responseCode: &quot; + responseCode)
+}
+//println(&quot;===&gt; responseMessage: &quot; + responseMessage)</stringProp>
+              </JSR223PostProcessor>
+              <hashTree/>
+            </hashTree>
+            <HTTPSamplerProxy guiclass="HttpTestSampleGui" testclass="HTTPSamplerProxy" testname="get cashbook analytic" enabled="false">
+              <stringProp name="HTTPSampler.domain">${sbh_base_url}</stringProp>
+              <stringProp name="HTTPSampler.path">/finan-transaction/api/v2/business-transaction/get-cash-book-analytics</stringProp>
+              <boolProp name="HTTPSampler.follow_redirects">true</boolProp>
+              <stringProp name="HTTPSampler.method">POST</stringProp>
+              <boolProp name="HTTPSampler.use_keepalive">true</boolProp>
+              <boolProp name="HTTPSampler.postBodyRaw">true</boolProp>
+              <elementProp name="HTTPsampler.Arguments" elementType="Arguments">
+                <collectionProp name="Arguments.arguments">
+                  <elementProp name="" elementType="HTTPArgument">
+                    <boolProp name="HTTPArgument.always_encode">false</boolProp>
+                    <stringProp name="Argument.value">{&#xd;
+	&quot;business_id&quot;: &quot;${business_id}&quot;,&#xd;
+	&quot;option&quot;: &quot;this_month&quot;,&#xd;
+	&quot;transaction_type&quot;: &quot;in&quot;,&#xd;
+	&quot;start_time&quot;: &quot;2024-09-30T17:00:00Z&quot;,&#xd;
+	&quot;end_time&quot;: &quot;2024-10-31T16:59:59Z&quot;&#xd;
+}</stringProp>
+                    <stringProp name="Argument.metadata">=</stringProp>
+                  </elementProp>
+                </collectionProp>
+              </elementProp>
+            </HTTPSamplerProxy>
+            <hashTree>
+              <HeaderManager guiclass="HeaderPanel" testclass="HeaderManager" testname="HTTP Header Manager" enabled="true">
+                <collectionProp name="HeaderManager.headers">
+                  <elementProp name="" elementType="Header">
+                    <stringProp name="Header.name">authorization</stringProp>
+                    <stringProp name="Header.value">Bearer ${userToken}</stringProp>
+                  </elementProp>
+                  <elementProp name="" elementType="Header">
+                    <stringProp name="Header.name">content-type</stringProp>
+                    <stringProp name="Header.value">application/json</stringProp>
+                  </elementProp>
+                  <elementProp name="" elementType="Header">
+                    <stringProp name="Header.name">x-current-version</stringProp>
+                    <stringProp name="Header.value">${x-current-version}</stringProp>
+                  </elementProp>
+                </collectionProp>
+              </HeaderManager>
+              <hashTree/>
+              <JSR223PreProcessor guiclass="TestBeanGUI" testclass="JSR223PreProcessor" testname="JSR223 PreProcessor" enabled="true">
+                <stringProp name="scriptLanguage">groovy</stringProp>
+                <stringProp name="parameters"></stringProp>
+                <stringProp name="filename"></stringProp>
+                <stringProp name="cacheKey">true</stringProp>
+                <stringProp name="script"></stringProp>
+              </JSR223PreProcessor>
+              <hashTree/>
+              <JSR223PostProcessor guiclass="TestBeanGUI" testclass="JSR223PostProcessor" testname="JSR223 PostProcessor" enabled="true">
+                <stringProp name="scriptLanguage">groovy</stringProp>
+                <stringProp name="parameters"></stringProp>
+                <stringProp name="filename"></stringProp>
+                <stringProp name="cacheKey">true</stringProp>
+                <stringProp name="script">// Get the response code (e.g., 200, 404, etc.)
+def responseCode = prev.getResponseCode()
+// Get the response message (e.g., &quot;OK&quot;, &quot;Not Found&quot;, etc.)
+def responseMessage = prev.getResponseMessage()
+
+def username = vars.get(&quot;username&quot;);
+if(responseCode != 200){
+	println(&quot;===&gt; [Get cashbook analytic] Thread-&quot; + ${__threadNum} + &quot; (&quot; + username + &quot;) responseMessage: &quot; + responseMessage)
+	log.info(&quot;===&gt; [Get cashbook analytic] Thread-&quot; + ${__threadNum} + &quot; (&quot; + username + &quot;) responseMessage: &quot; + responseMessage)
+} else {
+	println(&quot;===&gt; [Get cashbook analytic] Thread-&quot; + ${__threadNum} + &quot; (&quot; + username + &quot;) responseCode: &quot; + responseCode)
+	log.info(&quot;===&gt; [Get cashbook analytic] Thread-&quot; + ${__threadNum} + &quot; (&quot; + username + &quot;) responseCode: &quot; + responseCode)
+}
+//println(&quot;===&gt; responseMessage: &quot; + responseMessage)</stringProp>
+              </JSR223PostProcessor>
+              <hashTree/>
+            </hashTree>
+            <HTTPSamplerProxy guiclass="HttpTestSampleGui" testclass="HTTPSamplerProxy" testname="create draft order" enabled="false">
+              <stringProp name="HTTPSampler.domain">${sbh_base_url}</stringProp>
+              <stringProp name="HTTPSampler.path">/finan-order/api/v9/seller/create-order</stringProp>
+              <boolProp name="HTTPSampler.follow_redirects">true</boolProp>
+              <stringProp name="HTTPSampler.method">POST</stringProp>
+              <boolProp name="HTTPSampler.use_keepalive">true</boolProp>
+              <boolProp name="HTTPSampler.postBodyRaw">true</boolProp>
+              <elementProp name="HTTPsampler.Arguments" elementType="Arguments">
+                <collectionProp name="Arguments.arguments">
+                  <elementProp name="" elementType="HTTPArgument">
+                    <boolProp name="HTTPArgument.always_encode">false</boolProp>
+                    <stringProp name="Argument.value">{&#xd;
+	&quot;created_order_at&quot;: &quot;${currentDay}&quot;,&#xd;
+	&quot;business_id&quot;: &quot;${business_id}&quot;,&#xd;
+	&quot;ordered_grand_total&quot;: ${__property(C-sku_price)},&#xd;
+	&quot;promotion_code&quot;: &quot;&quot;,&#xd;
+	&quot;promotion_discount&quot;: 0,&#xd;
+	&quot;other_discount&quot;: 0,&#xd;
+	&quot;delivery_fee&quot;: 0,&#xd;
+	&quot;delivery_method&quot;: &quot;buyer_pick_up&quot;,&#xd;
+	&quot;grand_total&quot;: ${__property(C-sku_price)},&#xd;
+	&quot;note&quot;: &quot;[perf] ${randInt}&quot;,&#xd;
+	&quot;buyer_info&quot;: {&#xd;
+		&quot;phone_number&quot;: &quot;+84907470430&quot;,&#xd;
+		&quot;name&quot;: &quot;[PERF] ChauLe&quot;&#xd;
+	},&#xd;
+	&quot;buyer_id&quot;: null,&#xd;
+	&quot;list_order_item&quot;: [{&#xd;
+		&quot;sku_name&quot;: &quot;${__property(C-sku_name)}&quot;,&#xd;
+		&quot;sku_code&quot;: null,&#xd;
+		&quot;quantity&quot;: 1,&#xd;
+		&quot;note&quot;: null,&#xd;
+		&quot;price&quot;: ${__property(C-sku_price)},&#xd;
+		&quot;product_normal_price&quot;: ${__property(C-sku_price)},&#xd;
+		&quot;product_selling_price&quot;: ${__property(C-sku_price)},&#xd;
+		&quot;product_name&quot;: &quot;${__property(C-product_name)}&quot;,&#xd;
+		&quot;product_images&quot;: [&quot;&quot;],&#xd;
+		&quot;uom&quot;: &quot;Lon&quot;,&#xd;
+		&quot;can_pick_quantity&quot;: 36,&#xd;
+		&quot;type&quot;: &quot;stock&quot;,&#xd;
+		&quot;product_id&quot;: &quot;${__property(C-product_id)}&quot;,&#xd;
+		&quot;order_item_add_on&quot;: [],&#xd;
+		&quot;additional_item_info&quot;: {&#xd;
+			&quot;amount&quot;: 0,&#xd;
+			&quot;type&quot;: &quot;value&quot;,&#xd;
+			&quot;is_gift&quot;: false&#xd;
+		},&#xd;
+		&quot;priority&quot;: 0,&#xd;
+		&quot;sku_id&quot;: &quot;${__property(C-sku_id)}&quot;,&#xd;
+		&quot;sku_uom_id&quot;: null,&#xd;
+		&quot;category_ids&quot;: []&#xd;
+	}],&#xd;
+	&quot;list_product_fast&quot;: [],&#xd;
+	&quot;has_priority&quot;: true,&#xd;
+	&quot;payment_source_name&quot;: &quot;Tiền mặt&quot;,&#xd;
+	&quot;payment_method&quot;: &quot;Tiền mặt&quot;,&#xd;
+	&quot;buyer_received&quot;: false,&#xd;
+	&quot;create_method&quot;: &quot;seller&quot;,&#xd;
+	&quot;images&quot;: [],&#xd;
+	&quot;debit&quot;: {&#xd;
+		&quot;buyer_pay&quot;: 0&#xd;
+	},&#xd;
+	&quot;additional_info&quot;: {&#xd;
+		&quot;given_amount&quot;: 0,&#xd;
+		&quot;discount_type&quot;: &quot;value&quot;&#xd;
+	},&#xd;
+	&quot;state&quot;: &quot;delivering&quot;,&#xd;
+	&quot;is_wholesale_price&quot;: false,&#xd;
+	&quot;is_customer_point&quot;: false,&#xd;
+	&quot;customer_point&quot;: 0,&#xd;
+	&quot;customer_point_discount&quot;: 0,&#xd;
+	&quot;reservation_info&quot;: {},&#xd;
+	&quot;list_surcharge&quot;: [],&#xd;
+	&quot;surcharge&quot;: 0&#xd;
+}</stringProp>
+                    <stringProp name="Argument.metadata">=</stringProp>
+                  </elementProp>
+                </collectionProp>
+              </elementProp>
+            </HTTPSamplerProxy>
+            <hashTree>
+              <HeaderManager guiclass="HeaderPanel" testclass="HeaderManager" testname="HTTP Header Manager" enabled="true">
+                <collectionProp name="HeaderManager.headers">
+                  <elementProp name="" elementType="Header">
+                    <stringProp name="Header.name">authorization</stringProp>
+                    <stringProp name="Header.value">Bearer ${userToken}</stringProp>
+                  </elementProp>
+                  <elementProp name="" elementType="Header">
+                    <stringProp name="Header.name">content-type</stringProp>
+                    <stringProp name="Header.value">application/json</stringProp>
+                  </elementProp>
+                  <elementProp name="" elementType="Header">
+                    <stringProp name="Header.name">x-current-version</stringProp>
+                    <stringProp name="Header.value">${x-current-version}</stringProp>
+                  </elementProp>
+                </collectionProp>
+              </HeaderManager>
+              <hashTree/>
+              <JSR223PreProcessor guiclass="TestBeanGUI" testclass="JSR223PreProcessor" testname="JSR223 PreProcessor" enabled="true">
+                <stringProp name="scriptLanguage">groovy</stringProp>
+                <stringProp name="parameters"></stringProp>
+                <stringProp name="filename"></stringProp>
+                <stringProp name="cacheKey">true</stringProp>
+                <stringProp name="script">// Import necessary classes
+import java.time.LocalDate;
+import java.util.Locale;
+
+// Get the current date
+def date = new Date()
+def value_at = date.format(&quot;yyyy-MM-dd&apos;T&apos;HH:mm:ss&apos;Z&apos;&quot;, TimeZone.getTimeZone(&apos;UTC&apos;))
+
+// Log the current day for verification
+log.info(&quot;Current Day: &quot; + value_at);
+
+// Optionally, set the current day to a JMeter variable
+vars.put(&quot;currentDay&quot;, value_at);
+
+// show debug
+def username = vars.get(&quot;username&quot;);
+println(username + &quot; create order with sku_id &quot; + sku_id);
+
+def sku_id = vars.get(&quot;sku_id&quot;)
+log.info(&quot;===========&gt; sku_id: &quot; + sku_id)
+
+def product_id = vars.get(&quot;product_id&quot;)
+log.info(&quot;===========&gt; product_id: &quot; + product_id)
+
+</stringProp>
+              </JSR223PreProcessor>
+              <hashTree/>
+            </hashTree>
+          </hashTree>
+          <ConstantTimer guiclass="ConstantTimerGui" testclass="ConstantTimer" testname="Constant Timer" enabled="true">
+            <stringProp name="ConstantTimer.delay">3000</stringProp>
+            <stringProp name="TestPlan.comments">delay every actions every 3000ms</stringProp>
+          </ConstantTimer>
+          <hashTree/>
+          <HTTPSamplerProxy guiclass="HttpTestSampleGui" testclass="HTTPSamplerProxy" testname="get default product list" enabled="false">
+            <stringProp name="HTTPSampler.domain">${sbh_base_url}</stringProp>
+            <stringProp name="HTTPSampler.path">/finan-product/api/v1/product/get-all-product-in-stock</stringProp>
+            <boolProp name="HTTPSampler.follow_redirects">true</boolProp>
+            <stringProp name="HTTPSampler.method">GET</stringProp>
+            <boolProp name="HTTPSampler.use_keepalive">true</boolProp>
+            <boolProp name="HTTPSampler.postBodyRaw">false</boolProp>
+            <elementProp name="HTTPsampler.Arguments" elementType="Arguments" guiclass="HTTPArgumentsPanel" testclass="Arguments" testname="User Defined Variables">
+              <collectionProp name="Arguments.arguments">
+                <elementProp name="business_id" elementType="HTTPArgument">
+                  <boolProp name="HTTPArgument.always_encode">true</boolProp>
+                  <stringProp name="Argument.value">${__property(C-business_id)}</stringProp>
+                  <stringProp name="Argument.metadata">=</stringProp>
+                  <boolProp name="HTTPArgument.use_equals">true</boolProp>
+                  <stringProp name="Argument.name">business_id</stringProp>
+                </elementProp>
+                <elementProp name="page" elementType="HTTPArgument">
+                  <boolProp name="HTTPArgument.always_encode">true</boolProp>
+                  <stringProp name="Argument.value">1</stringProp>
+                  <stringProp name="Argument.metadata">=</stringProp>
+                  <boolProp name="HTTPArgument.use_equals">true</boolProp>
+                  <stringProp name="Argument.name">page</stringProp>
+                </elementProp>
+                <elementProp name="page_size" elementType="HTTPArgument">
+                  <boolProp name="HTTPArgument.always_encode">true</boolProp>
+                  <stringProp name="Argument.value">50</stringProp>
+                  <stringProp name="Argument.metadata">=</stringProp>
+                  <boolProp name="HTTPArgument.use_equals">true</boolProp>
+                  <stringProp name="Argument.name">page_size</stringProp>
+                </elementProp>
+                <elementProp name="sort" elementType="HTTPArgument">
+                  <boolProp name="HTTPArgument.always_encode">true</boolProp>
+                  <stringProp name="Argument.value">priority asc</stringProp>
+                  <stringProp name="Argument.metadata">=</stringProp>
+                  <boolProp name="HTTPArgument.use_equals">true</boolProp>
+                  <stringProp name="Argument.name">sort</stringProp>
+                </elementProp>
+              </collectionProp>
+            </elementProp>
+          </HTTPSamplerProxy>
+          <hashTree>
+            <HeaderManager guiclass="HeaderPanel" testclass="HeaderManager" testname="HTTP Header Manager" enabled="true">
+              <collectionProp name="HeaderManager.headers">
+                <elementProp name="" elementType="Header">
+                  <stringProp name="Header.name">Authorization</stringProp>
+                  <stringProp name="Header.value">Bearer ${__property(C-userToken)}</stringProp>
+                </elementProp>
+                <elementProp name="" elementType="Header">
+                  <stringProp name="Header.name">Content-Type</stringProp>
+                  <stringProp name="Header.value">application/json</stringProp>
+                </elementProp>
+              </collectionProp>
+            </HeaderManager>
+            <hashTree/>
+            <JSR223PostProcessor guiclass="TestBeanGUI" testclass="JSR223PostProcessor" testname="JSR223 PostProcessor" enabled="true">
+              <stringProp name="scriptLanguage">groovy</stringProp>
+              <stringProp name="parameters"></stringProp>
+              <stringProp name="filename"></stringProp>
+              <stringProp name="cacheKey">true</stringProp>
+              <stringProp name="script">// Import required classes for JSON handling
+import groovy.json.JsonSlurper
+
+// Get the response data
+def response = prev.getResponseDataAsString()
+
+// Parse the response as JSON
+def jsonSlurper = new JsonSlurper()
+def jsonResponse = jsonSlurper.parseText(response)
+log.info(&quot;===========&gt; jsonResponse: &quot; + jsonResponse)
+
+// Extract the desired data from the parsed JSON object
+def position = vars.get(&quot;position&quot;)
+log.info(&quot;===========&gt; position: &quot; + position)
+
+def sku_id = jsonResponse.data[position]?.id
+def sku_code = jsonResponse.data[position].sku_code
+def sku_name = jsonResponse.data[position].sku_name
+def sku_price = jsonResponse.data[position].normal_price
+
+def product_id = jsonResponse.data[position].product_id
+def product_name = jsonResponse.data[position].product_name
+
+def can_pick_quantity = jsonResponse.data[position].can_pick_quantity
+
+// Print extracted value to JMeter log for debugging
+log.info(&quot;===========&gt; sku_id: &quot; + sku_id?.toString())
+log.info(&quot;===========&gt; sku_code: &quot; + sku_code)
+log.info(&quot;===========&gt; sku_name: &quot; + sku_name)
+log.info(&quot;===========&gt; sku_price: &quot; + sku_price)
+log.info(&quot;===========&gt; product_id: &quot; + product_id)
+log.info(&quot;===========&gt; product_name: &quot; + product_name)
+log.info(&quot;===========&gt; can_pick_quantity: &quot; + can_pick_quantity)
+
+// Store the extracted value in a JMeter variable
+vars.put(&quot;sku_id&quot;, sku_id)
+vars.put(&quot;sku_code&quot;, sku_code)
+vars.put(&quot;sku_name&quot;, sku_name)
+vars.put(&quot;sku_price&quot;, sku_price)
+vars.put(&quot;product_id&quot;, product_id)
+vars.put(&quot;product_name&quot;, product_name)
+vars.put(&quot;can_pick_quantity&quot;, can_pick_quantity)</stringProp>
+            </JSR223PostProcessor>
+            <hashTree/>
+            <BeanShellAssertion guiclass="BeanShellAssertionGui" testclass="BeanShellAssertion" testname="BeanShell Assertion" enabled="true">
+              <stringProp name="BeanShellAssertion.query">${__setProperty(C-sku_id,${sku_id})}
+${__setProperty(C-product_id,${product_id})}
+${__setProperty(C-sku_price,${sku_price})}
+${__setProperty(C-product_name,${product_name})}
+${__setProperty(C-sku_name,${sku_name})}
+${__setProperty(C-sku_code,${sku_code})}
+${__setProperty(C-can_pick_quantity,${can_pick_quantity})}</stringProp>
+              <stringProp name="BeanShellAssertion.filename"></stringProp>
+              <stringProp name="BeanShellAssertion.parameters"></stringProp>
+              <boolProp name="BeanShellAssertion.resetInterpreter">false</boolProp>
+            </BeanShellAssertion>
+            <hashTree/>
+          </hashTree>
+        </hashTree>
+        <ResultCollector guiclass="ViewResultsFullVisualizer" testclass="ResultCollector" testname="View Results Tree">
+          <boolProp name="ResultCollector.error_logging">false</boolProp>
+          <objProp>
+            <name>saveConfig</name>
+            <value class="SampleSaveConfiguration">
+              <time>true</time>
+              <latency>true</latency>
+              <timestamp>true</timestamp>
+              <success>true</success>
+              <label>true</label>
+              <code>true</code>
+              <message>true</message>
+              <threadName>true</threadName>
+              <dataType>true</dataType>
+              <encoding>false</encoding>
+              <assertions>true</assertions>
+              <subresults>true</subresults>
+              <responseData>false</responseData>
+              <samplerData>false</samplerData>
+              <xml>false</xml>
+              <fieldNames>true</fieldNames>
+              <responseHeaders>false</responseHeaders>
+              <requestHeaders>false</requestHeaders>
+              <responseDataOnError>false</responseDataOnError>
+              <saveAssertionResultsFailureMessage>true</saveAssertionResultsFailureMessage>
+              <assertionsResultsToSave>0</assertionsResultsToSave>
+              <bytes>true</bytes>
+              <sentBytes>true</sentBytes>
+              <url>true</url>
+              <threadCounts>true</threadCounts>
+              <idleTime>true</idleTime>
+              <connectTime>true</connectTime>
+            </value>
+          </objProp>
+          <stringProp name="filename"></stringProp>
+        </ResultCollector>
+        <hashTree/>
+      </hashTree>
+      <ResultCollector guiclass="TableVisualizer" testclass="ResultCollector" testname="View Results in Table" enabled="true">
+        <boolProp name="ResultCollector.error_logging">false</boolProp>
+        <objProp>
+          <name>saveConfig</name>
+          <value class="SampleSaveConfiguration">
+            <time>true</time>
+            <latency>true</latency>
+            <timestamp>true</timestamp>
+            <success>true</success>
+            <label>true</label>
+            <code>true</code>
+            <message>true</message>
+            <threadName>true</threadName>
+            <dataType>true</dataType>
+            <encoding>false</encoding>
+            <assertions>true</assertions>
+            <subresults>true</subresults>
+            <responseData>false</responseData>
+            <samplerData>false</samplerData>
+            <xml>false</xml>
+            <fieldNames>true</fieldNames>
+            <responseHeaders>false</responseHeaders>
+            <requestHeaders>false</requestHeaders>
+            <responseDataOnError>false</responseDataOnError>
+            <saveAssertionResultsFailureMessage>true</saveAssertionResultsFailureMessage>
+            <assertionsResultsToSave>0</assertionsResultsToSave>
+            <bytes>true</bytes>
+            <sentBytes>true</sentBytes>
+            <url>true</url>
+            <threadCounts>true</threadCounts>
+            <idleTime>true</idleTime>
+            <connectTime>true</connectTime>
+          </value>
+        </objProp>
+        <stringProp name="filename"></stringProp>
+      </ResultCollector>
+      <hashTree/>
+    </hashTree>
+  </hashTree>
+</jmeterTestPlan>

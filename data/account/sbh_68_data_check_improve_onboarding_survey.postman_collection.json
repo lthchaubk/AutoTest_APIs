@@ -1,0 +1,1284 @@
+{
+	"info": {
+		"_postman_id": "2d1c580c-cbfd-44ef-9b31-5fcbf4316f24",
+		"name": "sbh_68_data_check_improve_onboarding_survey",
+		"description": "### Testsuite 68: data check improve onboarding survey\n\nDocs: [https://sobanhang.larksuite.com/wiki/MbjOwjLn8iGF5rk1EdWu1knAsTh]()\n\nData file: [https://docs.google.com/spreadsheets/d/1thyxgPJtu1VnvhN5rKljViwZG70YmAwgbRk5wG0COz8/edit#gid=1731130558]()\n\nFields:\n\nTestcase:\n\n1. Login with new account\n2. Create business for account form data file\n3. Check user info\n4. Check setting\n    \n\nNote: data for \"SP mẫu\" just manual testing, will handle auto laster ([https://docs.google.com/spreadsheets/d/1vu5-1ZmGbx7zmGBC08CSjyPjL3KXdpEjL1jz2BcjYbI/edit?pli=1#gid=322452012]())",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"_exporter_id": "282640",
+		"_collection_link": "https://orange-flare-7574.postman.co/workspace/SBH~f4185a61-779f-45fa-bd2f-984f2d5419e3/collection/282640-2d1c580c-cbfd-44ef-9b31-5fcbf4316f24?action=share&creator=282640&source=collection_link"
+	},
+	"item": [
+		{
+			"name": "Auth",
+			"item": [
+				{
+					"name": "request_generate_otp",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"let testcase = data.testcase;",
+									"if(testcase == \"flow68_001\"){",
+									"    console.log(\"--- Start Testsuite 68 ---\");",
+									"}",
+									"console.log(\"Testdata - case: \" + testcase);",
+									"",
+									"//random characters",
+									"function randomChars(length) {",
+									"    var result           = '';",
+									"    var characters       = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';",
+									"    var charactersLength = characters.length;",
+									"    for ( var i = 0; i < length; i++ ) {",
+									"      result += characters.charAt(Math.floor(Math.random() * ",
+									" charactersLength));",
+									"   }",
+									"   return result;",
+									"}",
+									"",
+									"//random number between min and max",
+									"function getRandomInt(min, max) {",
+									"  \treturn Math.floor(Math.random() * (max - min + 1)) + min;",
+									"}",
+									"",
+									"// random phone number",
+									"let randomPhone = () => {",
+									"    let phoneNumber = \"\";",
+									"    let viettel = ['86','96','97','98','32','33','34','35','36','37','38','39'];",
+									"    let vina = ['88','81','82','83','84','85','91','94'];",
+									"    let mobi = ['89','90','93','70','76','77','78','79'];",
+									"    let vinamobile = ['92','56','58'];",
+									"    let gmobile = ['99','59'];",
+									"    let itelecom = ['87'];",
+									"    let phoneFormat = ['+84','0'];//'+84','0'",
+									"    phoneNumber += phoneFormat[1]; // getRandomInt(0,phoneFormat.length - 1)",
+									"    let allNet = [...viettel,...vina,...mobi,...vinamobile,...gmobile,...itelecom];",
+									"    phoneNumber += allNet[getRandomInt(0,allNet.length - 1)];",
+									"    for(let i = 0; i < 7; i++){",
+									"        phoneNumber += getRandomInt(0,9);",
+									"    }",
+									"    return phoneNumber;",
+									"}",
+									"",
+									"let secret_key = randomChars(40);",
+									"let platfrom_list = [\"pro_web\",\"stapp\"];",
+									"let device_id = randomChars(8) + \"-\" + randomChars(4) + \"-\" + randomChars(4) + \"-\" + randomChars(4) + \"-\" + randomChars(12);",
+									"let platform = platfrom_list[getRandomInt(0,platfrom_list.length - 1)];",
+									"",
+									"// debug",
+									"console.log(\"platform: \" + platform);",
+									"console.log(\"device_id: \" + device_id);",
+									"console.log(\"secret_key: \" + secret_key);",
+									"",
+									"let phone_number = randomPhone();",
+									"console.log(\"phone_number: \" + phone_number);",
+									"",
+									"let list_phone_use_test = pm.environment.get(\"C-list_phone_use_test\");",
+									"if(!list_phone_use_test){",
+									"    list_phone_use_test = [];",
+									"} ",
+									"list_phone_use_test[list_phone_use_test.length] = phone_number;",
+									"pm.environment.set(\"C-list_phone_use_test\",list_phone_use_test);",
+									"",
+									"// let phone_number = pm.environment.get(\"SER-phone_number\");",
+									"pm.environment.set(\"C-phone_number\",phone_number);",
+									"pm.environment.set(\"C-platform\",platform);",
+									"pm.environment.set(\"C-device_id\",device_id);",
+									"pm.environment.set(\"C-secret_key\",secret_key);"
+								],
+								"type": "text/javascript"
+							}
+						},
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"let jsData = pm.response.json();",
+									"if(pm.response.code == 200){",
+									"    if(jsData.data.status == \"created\"){",
+									"        postman.setNextRequest(\"get_user_token_via_otp\");",
+									"    } else {",
+									"        console.log(\"Error:\", JSON.stringify(jsData));",
+									"        postman.setNextRequest(null);",
+									"    }",
+									"} else {",
+									"    console.log(\"Error, end test\");",
+									"    console.log(JSON.stringify(jsData));",
+									"    postman.setNextRequest(null);",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"platform\": \"{{C-platform}}\",\n    \"phone_number\":\"{{C-phone_number}}\",\n    \"secret_key\":\"{{C-secret_key}}\",\n    \"device_id\":\"{{C-device_id}}\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{sbh_base_url}}/finan-user/api/v1/auth/otp/generate",
+							"host": [
+								"{{sbh_base_url}}"
+							],
+							"path": [
+								"finan-user",
+								"api",
+								"v1",
+								"auth",
+								"otp",
+								"generate"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "get_user_token_via_otp",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"//fix for DEV n STAGING: otp = 1207",
+									"",
+									"// note: newman can't parse with note in body raw type",
+									"let testcase = data.testcase;",
+									"console.log(\"Testdata - case: \" + testcase);"
+								],
+								"type": "text/javascript"
+							}
+						},
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"if(pm.response.code == 200){",
+									"    let jsData = pm.response.json();",
+									"    let testcase = data.testcase;",
+									"    // debug",
+									"    // console.log(JSON.stringify(jsData));",
+									"",
+									"    let business_id = null;",
+									"    try{",
+									"        business_id = jsData.data.business_info.list_business[0].business_id;",
+									"    } catch{",
+									"        console.log(\"This is new user, must create business_id\");",
+									"    }",
+									"",
+									"    let userToken = jsData.data.token;",
+									"    pm.environment.set(\"C-userToken\",userToken);",
+									"",
+									"    if(business_id == null){",
+									"        console.log(\"This user don't have store, create store\");",
+									"        ",
+									"        postman.setNextRequest(\"create_business_id_for_seller\");",
+									"    } else {",
+									"        console.log(\"This user is existed, please try new account\");",
+									"        postman.setNextRequest(\"request_generate_otp\");",
+									"    }",
+									"} else {",
+									"    console.log(\"Can't get Token, end test\");",
+									"",
+									"    // debug",
+									"    let jsData = pm.response.json();",
+									"    console.log(\"data:\",JSON.stringify(jsData));",
+									"",
+									"    postman.setNextRequest(null);",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json",
+								"type": "text",
+								"disabled": true
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"platform\": \"{{C-platform}}\",\n    \"otp\":\"1207\",\n    \"phone_number\":\"{{C-phone_number}}\",\n    \"secret_key\":\"{{C-secret_key}}\",\n    \"device_id\":\"{{C-device_id}}\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{sbh_base_url}}/finan-user/api/v1/auth/otp/confirm",
+							"host": [
+								"{{sbh_base_url}}"
+							],
+							"path": [
+								"finan-user",
+								"api",
+								"v1",
+								"auth",
+								"otp",
+								"confirm"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Business",
+			"item": [
+				{
+					"name": "create_business_id_for_seller",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"//random characters",
+									"function randomChars(length) {",
+									"    var result = '';",
+									"    var characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';",
+									"    var charactersLength = characters.length;",
+									"    for (var i = 0; i < length; i++) {",
+									"        result += characters.charAt(Math.floor(Math.random() *",
+									"            charactersLength));",
+									"    }",
+									"    return result;",
+									"}",
+									"",
+									"//random number between min and max",
+									"function getRandomInt(min, max) {",
+									"    return Math.floor(Math.random() * (max - min + 1)) + min;",
+									"}",
+									"",
+									"/**",
+									" * func randNotDupe(min, max, total)",
+									" * total: số lượng random, ko dc nhỏ hơn max-min+1",
+									" * return: array",
+									" */",
+									"function randNotDupe(min, max, total){",
+									"  let arrNum = []; // new empty array",
+									"  let n, p;",
+									"  for (let i = 0; i < total; i++) {",
+									"    do {",
+									"      n = Math.floor(Math.random() * (max - min + 1)) + min;",
+									"      p = arrNum.includes(n);",
+									"      if(!p){",
+									"        arrNum.push(n);",
+									"      }",
+									"    }",
+									"    while(p);",
+									"  }",
+									"  return arrNum;",
+									"}",
+									"",
+									"let testcase = data.testcase;",
+									"console.log(\"Testdata - case: \" + testcase);",
+									"",
+									"let key_1 = data.survey_1.split(','); //[\"eat_drink\"]//",
+									"let key_2 = data.survey_2; //[\"milk_tea\"]//",
+									"if(key_2 == \"\"){",
+									"    key_2 = [];",
+									"} else {",
+									"    key_2 = key_2.split(',');",
+									"}",
+									"// let term_3 = data.survey_3;",
+									"let key_3 = data.survey_3.split(','); //[\"invoice_printing\",\"shift_staff_management\",\"qr_money_noti\",\"kitchen_stamp_printing\",\"table_management\",\"store_chain\"]//",
+									"",
+									"// let payload = {",
+									"//     \"full_name\": \"[API][Data] Store \" + randomChars(8),",
+									"//     \"is_onboarding\": true,",
+									"//     \"metadata\": {",
+									"//         \"json_value\": [{",
+									"//             \"setting_key\": \"survey_1\",",
+									"//             \"key\":key_1",
+									"//         }, {",
+									"//             \"setting_key\": \"survey_2\",",
+									"//             \"key\":key_2",
+									"//         }, {",
+									"//             \"setting_key\": \"survey_3\",",
+									"//             \"key\":key_3",
+									"//         }],",
+									"//         \"setting_key\": \"survey_version_5\",",
+									"//         \"object_type\": \"users\",",
+									"//         \"key\": \"full\",",
+									"//         \"type\": \"survey_version_5\"",
+									"//     }",
+									"// }",
+									"// console.log(\"payload: \" + JSON.stringify(payload));",
+									"// pm.environment.set(\"C-payload\",JSON.stringify(payload));",
+									"",
+									"let full_name = \"[API][Data] Store \" + randomChars(8);",
+									"",
+									"console.log(\"full_name: \" + full_name);",
+									"console.log(\"key_1: \" + key_1);",
+									"console.log(\"key_2: \" + key_2);",
+									"console.log(\"key_3: \" + key_3);",
+									"",
+									"pm.environment.set(\"C-full_name\",full_name);",
+									"pm.environment.set(\"C-key_1\",JSON.stringify(key_1));",
+									"pm.environment.set(\"C-key_2\",JSON.stringify(key_2));",
+									"pm.environment.set(\"C-key_3\",JSON.stringify(key_3));"
+								],
+								"type": "text/javascript"
+							}
+						},
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"let testcase = data.testcase;",
+									"let respCode = data.respCode;",
+									"",
+									"pm.test(\"Status code is \" + respCode, function () {",
+									"    pm.response.to.have.status(respCode);",
+									"});",
+									"",
+									"if(pm.response.code == respCode){",
+									"    // update user token & get refresh token",
+									"    let jsData = pm.response.json();",
+									"    console.log(JSON.stringify(jsData));",
+									"    let userToken = jsData.data.token;",
+									"    let userRefreshToken = jsData.data.refresh_token;",
+									"",
+									"    // show log",
+									"    console.log(\"userToken:\",userToken);",
+									"    console.log(\"userRefreshToken:\",userRefreshToken);",
+									"",
+									"    pm.environment.set(\"C-userToken\",userToken);",
+									"    pm.environment.set(\"C-userRefreshToken\",userRefreshToken);",
+									"",
+									"    postman.setNextRequest(\"view_list_functions_suggestion\");",
+									"} else {",
+									"    console.log(\"Error, end flow\");",
+									"    postman.setNextRequest(null);",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{C-userToken}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"full_name\": \"{{C-full_name}}\",\n    \"is_onboarding\": true,\n    \"metadata\": {\n        \"json_value\": [{\n            \"setting_key\": \"survey_1\",\n            \"key\":{{C-key_1}}\n        }, {\n            \"setting_key\": \"survey_2\",\n            \"key\":{{C-key_2}}\n        }, {\n            \"setting_key\": \"survey_3\",\n            \"key\":{{C-key_3}}\n        }],\n        \"setting_key\": \"survey_version_5\",\n        \"object_type\": \"users\",\n        \"key\": \"full\",\n        \"type\": \"survey_version_5\"\n    }\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{sbh_base_url}}/finan-user/api/v1/onboarding/create",
+							"host": [
+								"{{sbh_base_url}}"
+							],
+							"path": [
+								"finan-user",
+								"api",
+								"v1",
+								"onboarding",
+								"create"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "view_list_functions_suggestion",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"const jsData = pm.response.json();",
+									"// console.log(JSON.stringify(jsData));",
+									"if(pm.response.code == 200){",
+									"    let testcase = data.testcase;",
+									"    let setting_display_function = jsData.data.list_setting.active;",
+									"    console.log(JSON.stringify(setting_display_function));",
+									"    let has_quickcash = \"false\", has_table_management = \"false\", has_create_order = \"false\", has_product = \"false\", has_order = \"false\", has_staff = \"false\", has_inventory = \"false\", has_customer = \"false\";",
+									"",
+									"    for(let item in setting_display_function){",
+									"        switch(setting_display_function[item].key){",
+									"            case \"inventory\":",
+									"                has_inventory = \"true\";",
+									"                break;",
+									"            case \"product\":",
+									"                has_product = \"true\";",
+									"                break;",
+									"            case \"create_order\":",
+									"                has_create_order = \"true\";",
+									"                break;",
+									"            case \"table_management\":",
+									"                has_table_management = \"true\";",
+									"                break;",
+									"            case \"order\":",
+									"                has_order = \"true\";",
+									"                break;",
+									"            case \"customer\":",
+									"                has_customer = \"true\";",
+									"                break;",
+									"            case \"staff\":",
+									"                has_staff = \"true\";",
+									"                break;",
+									"            case \"quickcash\":",
+									"                has_quickcash = \"true\";",
+									"                break;",
+									"            default:",
+									"                console.log(\"error key: \" + setting_display_function[item].key);",
+									"                break;",
+									"        }",
+									"    }",
+									"",
+									"    pm.test(\"Had \" + data.active_func + \" display_function\", function () {",
+									"        console.log(\"setting_display_function.length: \" + setting_display_function.length);",
+									"        pm.expect(setting_display_function.length == data.active_func).to.be.true;",
+									"    });",
+									"    pm.test(\"1. check field quickcash\", function () {",
+									"        console.log(\"has_quickcash: \" + has_quickcash);",
+									"        console.log(\"data.func_quickcash: \" + data.func_quickcash.toLowerCase());",
+									"        pm.expect(has_quickcash == data.func_quickcash.toLowerCase()).to.be.true;",
+									"    });",
+									"    pm.test(\"2. check field table_management\", function () {",
+									"        console.log(\"has_table_management: \" + has_table_management);",
+									"        console.log(\"data.func_table_management: \" + data.func_table_management);",
+									"        pm.expect(has_table_management.toLowerCase() == data.func_table_management.toLowerCase()).to.be.true;",
+									"    });",
+									"    pm.test(\"3. check field create_order\", function () {",
+									"        console.log(\"has_quickcash: \" + has_quickcash);",
+									"        console.log(\"data.func_quickcash: \" + data.func_quickcash);",
+									"        pm.expect(has_create_order == data.func_create_order.toLowerCase()).to.be.true;",
+									"    });",
+									"    pm.test(\"4. check field product\", function () {",
+									"        console.log(\"has_product: \" + has_product);",
+									"        console.log(\"data.func_product: \" + data.func_product);",
+									"        pm.expect(has_product == data.func_product.toLowerCase()).to.be.true;",
+									"    });",
+									"    pm.test(\"5. check field order\", function () {",
+									"        console.log(\"has_order: \" + has_order);",
+									"        console.log(\"data.func_order: \" + data.func_order.toLowerCase());",
+									"        pm.expect(has_order == data.func_order.toLowerCase()).to.be.true;",
+									"    });",
+									"    pm.test(\"6. check field staff\", function () {",
+									"        console.log(\"has_staff: \" + has_staff);",
+									"        console.log(\"data.func_staff: \" + data.func_staff);",
+									"        pm.expect(has_staff == data.func_staff.toLowerCase()).to.be.true;",
+									"    });",
+									"    pm.test(\"7. check field inventory\", function () {",
+									"        console.log(\"has_inventory: \" + has_inventory);",
+									"        console.log(\"data.func_inventory: \" + data.func_inventory);",
+									"        pm.expect(has_inventory == data.func_inventory.toLowerCase()).to.be.true;",
+									"    });",
+									"    pm.test(\"8. check field customer\", function () {",
+									"        console.log(\"has_customer: \" + has_customer);",
+									"        console.log(\"data.func_customer: \" + data.func_customer);",
+									"        pm.expect(has_customer == data.func_customer.toLowerCase()).to.be.true;",
+									"    });",
+									"",
+									"    postman.setNextRequest(\"view_list_tab_bar_suggestion\");",
+									"} else {",
+									"    console.log(\"Error, end flow\");",
+									"    postman.setNextRequest(null);",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						},
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"let testcase = data.testcase;",
+									"console.log(\"Testdata - case: \" + testcase);"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{C-userToken}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n\t\"is_filter\": true,\n\t\"object_type\": \"users\",\n\t\"sort\": \"priority asc\",\n\t\"json_value\": [],\n\t\"media\": [{\n\t\t\"type\": \"image\",\n\t\t\"url\": \"\"\n\t}],\n\t\"name\": \"\",\n\t\"setting_key\": \"setting_display_function\",\n\t\"type\": \"setting_display_function\",\n\t\"in_visible\": false\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{sbh_base_url}}/finan-metadata/api/v4/per-setting/get-one-or-create",
+							"host": [
+								"{{sbh_base_url}}"
+							],
+							"path": [
+								"finan-metadata",
+								"api",
+								"v4",
+								"per-setting",
+								"get-one-or-create"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "view_list_tab_bar_suggestion",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"const jsData = pm.response.json();",
+									"console.log(JSON.stringify(jsData));",
+									"if(pm.response.code == 200){",
+									"    let testcase = data.testcase;",
+									"    let tab_bar = jsData.data.list_setting.active;",
+									"    let has_store = \"false\", has_online_store = \"false\", has_inventory = \"false\", has_staff = \"false\", has_ingredient = \"false\", has_cash_book = \"false\", has_report = \"false\" ;",
+									"",
+									"    for(let item in tab_bar){",
+									"        switch(tab_bar[item].key){",
+									"            case \"store\":",
+									"                has_store = \"true\";",
+									"                break;",
+									"            case \"cash_book\":",
+									"                has_cash_book = \"true\";",
+									"                break;",
+									"            case \"ingredient\":",
+									"                has_ingredient = \"true\";",
+									"                break;",
+									"            case \"inventory\":",
+									"                has_inventory = \"true\";",
+									"                break;",
+									"            case \"online_store\":",
+									"                has_online_store = \"true\";",
+									"                break;",
+									"            case \"staff\":",
+									"                has_staff = \"true\";",
+									"                break;",
+									"            case \"report\":",
+									"                has_report = \"true\";",
+									"                break;",
+									"            default:",
+									"                console.log(\"error key: \" + tab_bar[item].key);",
+									"                break;",
+									"        }",
+									"    }",
+									"",
+									"    pm.test(\"Had \" + data.active_nav_bar + \" tab_bar\", function () {",
+									"        console.log(\"tab_bar.length: \" + tab_bar.length);",
+									"        pm.expect(tab_bar.length == data.active_nav_bar).to.be.true;",
+									"    });",
+									"    pm.test(\"1. check field store\", function () {",
+									"        pm.expect(has_store == data.nav_bar_store.toLowerCase()).to.be.true;",
+									"    });",
+									"    pm.test(\"2. check field online_store\", function () {",
+									"        pm.expect(has_online_store == data.nav_bar_online_store.toLowerCase()).to.be.true;",
+									"    });",
+									"    pm.test(\"3. check field inventory\", function () {",
+									"        pm.expect(has_inventory == data.nav_bar_inventory.toLowerCase()).to.be.true;",
+									"    });",
+									"    pm.test(\"4. check field staff\", function () {",
+									"        pm.expect(has_staff == data.nav_bar_staff.toLowerCase()).to.be.true;",
+									"    });",
+									"    pm.test(\"5. check field ingredient\", function () {",
+									"        pm.expect(has_ingredient == data.nav_bar_ingredient.toLowerCase()).to.be.true;",
+									"    });",
+									"    pm.test(\"6. check field cash_book\", function () {",
+									"        pm.expect(has_cash_book == data.nav_bar_cash_book.toLowerCase()).to.be.true;",
+									"    });",
+									"    pm.test(\"7. check field report\", function () {",
+									"        pm.expect(has_report == data.nav_bar_report.toLowerCase()).to.be.true;",
+									"    });",
+									"",
+									"    postman.setNextRequest(\"view_store_setting\");",
+									"} else {",
+									"    console.log(\"Error, end flow\");",
+									"    postman.setNextRequest(null);",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						},
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"let testcase = data.testcase;",
+									"console.log(\"Testdata - case: \" + testcase);"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{C-userToken}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n\t\"json_value\": [],\n\t\"setting_key\": \"tab_bar\",\n\t\"object_type\": \"users\",\n\t\"type\": \"tab_bar\",\n\t\"sort\": \"priority asc\",\n\t\"is_filter\": true\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{sbh_base_url}}/finan-metadata/api/v4/per-setting/get-one-or-create",
+							"host": [
+								"{{sbh_base_url}}"
+							],
+							"path": [
+								"finan-metadata",
+								"api",
+								"v4",
+								"per-setting",
+								"get-one-or-create"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "view_store_setting",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"const jsData = pm.response.json();",
+									"console.log(JSON.stringify(jsData));",
+									"if(pm.response.code == 200){",
+									"    let testcase = data.testcase;",
+									"    let pos_setting = jsData.data.pos_setting;",
+									"",
+									"    pm.test(\"1. fnb_active must be \" + data.setting_fnb_active, function () {",
+									"        pm.expect(pos_setting.fnb_active.toString() == data.setting_fnb_active.toLowerCase()).to.be.true;",
+									"    });",
+									"    pm.test(\"2. show_discount must be \" + data.setting_show_discount, function () {",
+									"        pm.expect(pos_setting.show_discount.toString() == data.setting_show_discount.toLowerCase()).to.be.true;",
+									"    });",
+									"    pm.test(\"3. show_shipping_fee must be \" + data.setting_show_shipping_fee, function () {",
+									"        pm.expect(pos_setting.show_shipping_fee.toString() == data.setting_show_shipping_fee.toLowerCase()).to.be.true;",
+									"    });",
+									"    pm.test(\"4. show_promotion must be \" + data.setting_show_promotion, function () {",
+									"        pm.expect(pos_setting.show_promotion.toString() == data.setting_show_promotion.toLowerCase()).to.be.true;",
+									"    });",
+									"    pm.test(\"5. delivery_later must be \" + data.setting_delivery_later, function () {",
+									"        pm.expect(pos_setting.delivery_later.toString() == data.setting_delivery_later.toLowerCase()).to.be.true;",
+									"    });",
+									"    pm.test(\"6. quick_sell must be \" + data.setting_quick_sell, function () {",
+									"        pm.expect(pos_setting.quick_sell.toString() == data.setting_quick_sell.toLowerCase()).to.be.true;",
+									"    });",
+									"    pm.test(\"7. preview_order must be \" + data.setting_preview_order, function () {",
+									"        pm.expect(pos_setting.preview_order.toString() == data.setting_preview_order.toLowerCase()).to.be.true;",
+									"    });",
+									"",
+									"    postman.setNextRequest(\"create_sample_product\");",
+									"} else {",
+									"    console.log(\"Error, end flow\");",
+									"    postman.setNextRequest(null);",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						},
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"let testcase = data.testcase;",
+									"console.log(\"Testdata - case: \" + testcase);"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{C-userToken}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{sbh_base_url}}/finan-metadata/api/v1/setting/get-detail",
+							"host": [
+								"{{sbh_base_url}}"
+							],
+							"path": [
+								"finan-metadata",
+								"api",
+								"v1",
+								"setting",
+								"get-detail"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Product",
+			"item": [
+				{
+					"name": "create_sample_product",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"let testcase = data.testcase;",
+									"",
+									"switch(testcase){",
+									"    case \"flow68_008\": case \"flow68_010\": case \"flow68_011\": case \"flow68_012\": case \"flow68_013\":",
+									"        pm.test(\"Status code is 200\", function () {",
+									"            pm.response.to.have.status(200);",
+									"        });",
+									"",
+									"        postman.setNextRequest(null);",
+									"        break;",
+									"    default:",
+									"        // const jsData = pm.response.json();",
+									"        if(pm.response.code == 200){",
+									"",
+									"            postman.setNextRequest(\"get_user_info\");",
+									"        } else {",
+									"            console.log(\"Error, end flow\");",
+									"            postman.setNextRequest(null);",
+									"        }",
+									"        break;",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						},
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"let testcase = data.testcase;",
+									"console.log(\"Testdata - case: \" + testcase);"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{C-userToken}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{sbh_base_url}}/finan-product/api/v1/product/create-sample",
+							"host": [
+								"{{sbh_base_url}}"
+							],
+							"path": [
+								"finan-product",
+								"api",
+								"v1",
+								"product",
+								"create-sample"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "get_user_info",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"let testcase = data.testcase;",
+									"console.log(\"Testdata - case: \" + testcase);"
+								],
+								"type": "text/javascript"
+							}
+						},
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"const jsData = pm.response.json();",
+									"if(pm.response.code == 200){",
+									"    pm.environment.set(\"C-business_id\",jsData.data.business_info.current_business.id);",
+									"",
+									"    postman.setNextRequest(\"view_list_category\");",
+									"} else {",
+									"    console.log(\"Error, end flow\");",
+									"    postman.setNextRequest(null);",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{C-userToken}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{sbh_base_url}}/finan-user/api/v2/auth/info",
+							"host": [
+								"{{sbh_base_url}}"
+							],
+							"path": [
+								"finan-user",
+								"api",
+								"v2",
+								"auth",
+								"info"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "view_list_category",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"let testcase = data.testcase;",
+									"console.log(\"Testdata - case: \" + testcase);"
+								],
+								"type": "text/javascript"
+							}
+						},
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"const jsData = pm.response.json();",
+									"// console.log(JSON.stringify(jsData));",
+									"if(pm.response.code == 200){",
+									"    // let testcase = data.testcase;",
+									"    // let exp_data = JSON.parse(data.category_list);",
+									"    // let exp_total_category = data.total_category;",
+									"    // console.log(JSON.stringify(exp_data));",
+									"",
+									"    // let act_data = [];",
+									"    // let act_total_category = jsData.meta.total_rows;",
+									"    // for(let item in jsData.data){",
+									"    //     act_data[act_data.length] = {",
+									"    //         \"category_name\":jsData.data[item].name,",
+									"    //         \"count_product\":jsData.data[item].count_product",
+									"    //     }",
+									"    // }",
+									"",
+									"    // pm.test(\"This store had \" + exp_total_category + \" category\", function () {",
+									"    //     pm.expect(exp_total_category == act_total_category).to.be.true;",
+									"    // });",
+									"",
+									"    // pm.test(\"Data correctly!\", function () {",
+									"    //     pm.expect(JSON.stringify(exp_data) == JSON.stringify(act_data)).to.be.true;",
+									"    // });",
+									"",
+									"    // hiện tại phần sp mẫu sẽ dc team data chỉnh liên tục, nên chỉ cần check có tạo là dc",
+									"    pm.test(\"Created category\", function () {",
+									"        pm.expect(jsData.data.length > 0).to.be.true;",
+									"    });",
+									"",
+									"    postman.setNextRequest(\"view_list_product\");",
+									"} else {",
+									"    console.log(\"Error, end flow\");",
+									"    postman.setNextRequest(null);",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{C-userToken}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{sbh_base_url}}/finan-product/api/v2/category/seller/get-list?business_id={{C-business_id}}&has_record_deleted=true&option=is_first_product&page=1&page_size=50&type=",
+							"host": [
+								"{{sbh_base_url}}"
+							],
+							"path": [
+								"finan-product",
+								"api",
+								"v2",
+								"category",
+								"seller",
+								"get-list"
+							],
+							"query": [
+								{
+									"key": "business_id",
+									"value": "{{C-business_id}}"
+								},
+								{
+									"key": "has_record_deleted",
+									"value": "true"
+								},
+								{
+									"key": "option",
+									"value": "is_first_product"
+								},
+								{
+									"key": "page",
+									"value": "1"
+								},
+								{
+									"key": "page_size",
+									"value": "50"
+								},
+								{
+									"key": "type",
+									"value": ""
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "view_list_product",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"let testcase = data.testcase;",
+									"console.log(\"Testdata - case: \" + testcase);"
+								],
+								"type": "text/javascript"
+							}
+						},
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"const jsData = pm.response.json();",
+									"// console.log(JSON.stringify(jsData));",
+									"if(pm.response.code == 200){",
+									"    let testcase = data.testcase;",
+									"    // let exp_data = JSON.parse(data.product_list);",
+									"    // let exp_total_product = data.total_product;",
+									"",
+									"    // let act_data = [];",
+									"    // let act_total_product = jsData.meta.total_rows;",
+									"    // for(let item in jsData.data){",
+									"    //     act_data[act_data.length] = {",
+									"    //         \"product_name\":jsData.data[item].name,",
+									"    //         \"images\":jsData.data[item].images,",
+									"    //         \"product_code\":jsData.data[item].product_code,",
+									"    //         \"uom\":jsData.data[item].uom,",
+									"    //         \"normal_price\":jsData.data[item].list_sku[0].normal_price,",
+									"    //         \"historical_cost\":jsData.data[item].list_sku[0].historical_cost,",
+									"    //         \"promotion_price\":jsData.data[item].list_sku[0].selling_price,",
+									"    //         \"out_of_stock\":jsData.data[item].out_of_stock,",
+									"    //         \"total_quantity\":jsData.data[item].total_quantity",
+									"    //     }",
+									"    //     if(\"list_variant\" in jsData.data[item]){",
+									"    //         let list_variant = [];",
+									"    //         for(let i in jsData.data[item].list_variant){",
+									"    //             list_variant[list_variant.length] = {",
+									"    //                 \"variant_name\":jsData.data[item].list_variant[i].name",
+									"    //             }",
+									"    //             let list_attribute = [];",
+									"    //             for(let j in jsData.data[item].list_variant[i].list_attribute){",
+									"    //                 list_attribute[list_attribute.length] = jsData.data[item].list_variant[i].list_attribute[j].name;",
+									"    //             }",
+									"    //             list_variant[list_variant.length - 1].list_attribute = list_attribute;",
+									"    //         }",
+									"    //         act_data[act_data.length - 1].list_variant = list_variant;",
+									"    //     }",
+									"    //     if(\"category\" in jsData.data[item]){",
+									"    //         // data mẫu hiện tại 1 product chỉ thuộc 1 category, ko cần phải loop",
+									"    //         act_data[act_data.length - 1].category = jsData.data[item].category[0].name;",
+									"    //     }",
+									"    // }",
+									"",
+									"    // pm.test(\"This store had \" + exp_total_product + \" product\", function () {",
+									"    //     pm.expect(exp_total_product == act_total_product).to.be.true;",
+									"    // });",
+									"",
+									"    // let checkPrice = true, checkHistoryCost = true, checkPromoPrice = true, checkVariant = true, checkImg = true, checkUom = true, checkCategory = true;",
+									"    // let count = 0;",
+									"",
+									"    // for(let i in act_data){",
+									"    //     for(let j in exp_data){",
+									"    //         if(act_data[i].product_name == exp_data[j].product_name){",
+									"    //             count++;",
+									"    //             if(act_data[i].normal_price != exp_data[j].normal_price) {",
+									"    //                 console.log(\"product - \" + act_data[i].product_name);",
+									"    //                 console.log(\"act_data[i].normal_price - \" + act_data[i].normal_price);",
+									"    //                 console.log(\"exp_data[j].normal_price - \" + exp_data[j].normal_price);",
+									"    //                 console.log(\"-------------------------------------------\");",
+									"    //                 checkPrice = false;",
+									"    //             }",
+									"    //             if(act_data[i].historical_cost != exp_data[j].historical_cost) {",
+									"    //                 console.log(\"product - \" + act_data[i].product_name);",
+									"    //                 console.log(\"act_data[i].historical_cost - \" + act_data[i].historical_cost);",
+									"    //                 console.log(\"exp_data[j].historical_cost - \" + exp_data[j].historical_cost);",
+									"    //                 console.log(\"-------------------------------------------\");",
+									"    //                 checkHistoryCost = false;",
+									"    //             }",
+									"    //             if(act_data[i].images != exp_data[j].images) {",
+									"    //                 console.log(\"product - \" + act_data[i].product_name);",
+									"    //                 console.log(\"act_data[i].images - \" + act_data[i].images);",
+									"    //                 console.log(\"exp_data[j].images - \" + exp_data[j].images);",
+									"    //                 console.log(\"-------------------------------------------\");",
+									"    //                 checkImg = false;",
+									"    //             }",
+									"    //             if(act_data[i].uom != exp_data[j].uom) checkUom = false;",
+									"    //             if(act_data[i].category != exp_data[j].category) checkCategory = false;",
+									"    //             if(act_data[i].promotion_price != exp_data[j].promotion_price) {",
+									"    //                 console.log(\"product - \" + act_data[i].product_name);",
+									"    //                 console.log(\"act_data[i].promotion_price - \" + act_data[i].promotion_price);",
+									"    //                 console.log(\"exp_data[j].promotion_price - \" + exp_data[j].promotion_price);",
+									"    //                 console.log(\"-------------------------------------------\");",
+									"    //                 checkPromoPrice = false;",
+									"    //             }",
+									"    //             if(JSON.stringify(act_data[i].list_variant) != JSON.stringify(exp_data[j].list_variant)){",
+									"    //                 console.log(\"product - \" + act_data[i].product_name);",
+									"    //                 console.log(\"act_data - \" + JSON.stringify(act_data[i].list_variant));",
+									"    //                 console.log(\"exp_data - \" + JSON.stringify(exp_data[j].list_variant));",
+									"    //                 console.log(\"-------------------------------------------\");",
+									"    //                 checkVariant = false;",
+									"    //             }",
+									"    //             break;",
+									"    //         }",
+									"    //     }",
+									"    // }",
+									"",
+									"    // pm.test(\"normal_price correctly!\", function () {",
+									"    //     pm.expect(checkPrice).to.be.true;",
+									"    // });",
+									"",
+									"    // pm.test(\"historical_cost correctly!\", function () {",
+									"    //     pm.expect(checkHistoryCost).to.be.true;",
+									"    // });",
+									"",
+									"    // pm.test(\"images correctly!\", function () {",
+									"    //     pm.expect(checkImg).to.be.true;",
+									"    // });",
+									"",
+									"    // pm.test(\"uom correctly!\", function () {",
+									"    //     pm.expect(checkUom).to.be.true;",
+									"    // });",
+									"",
+									"    // pm.test(\"category correctly!\", function () {",
+									"    //     pm.expect(checkCategory).to.be.true;",
+									"    // });",
+									"",
+									"    // pm.test(\"promotion_price correctly!\", function () {",
+									"    //     pm.expect(checkPromoPrice).to.be.true;",
+									"    // });",
+									"",
+									"    // pm.test(\"list_variant correctly!\", function () {",
+									"    //     pm.expect(checkVariant).to.be.true;",
+									"    // });",
+									"",
+									"    // hiện tại phần sp mẫu sẽ dc team data chỉnh liên tục, nên chỉ cần check có tạo là dc",
+									"    pm.test(\"Created category\", function () {",
+									"        pm.expect(jsData.data.length > 0).to.be.true;",
+									"    });",
+									"",
+									"    let list_phone_use_test = pm.environment.get(\"C-list_phone_use_test\");",
+									"    console.log(\"list_phone_use_test: \" + JSON.stringify(list_phone_use_test));",
+									"    if(testcase == \"flow68_027\"){",
+									"        ",
+									"        console.log(\"USE FLOW 69 TO CLEAR THEM\");",
+									"        // console.log(\"--- End Testsuite 68 ---\");",
+									"    }",
+									"} else {",
+									"    console.log(\"Error, end flow\");",
+									"    postman.setNextRequest(null);",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{C-userToken}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{sbh_base_url}}/finan-product/api/v2/product/seller/get-list?business_id={{C-business_id}}&has_record_deleted=true&page=1&page_size=50",
+							"host": [
+								"{{sbh_base_url}}"
+							],
+							"path": [
+								"finan-product",
+								"api",
+								"v2",
+								"product",
+								"seller",
+								"get-list"
+							],
+							"query": [
+								{
+									"key": "business_id",
+									"value": "{{C-business_id}}"
+								},
+								{
+									"key": "has_record_deleted",
+									"value": "true"
+								},
+								{
+									"key": "page",
+									"value": "1"
+								},
+								{
+									"key": "page_size",
+									"value": "50"
+								}
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		}
+	]
+}
