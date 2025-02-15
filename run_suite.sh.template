@@ -51,7 +51,7 @@ fi;
 # VALUES ('sbh','auto_api','https://sbh-qc.${endpoint_s3}/auto-test-api-output/${currentDate}/${filename}_${timestamp}.log', '', '${currentUTC}');
 # EOF
 
-psql "postgresql://postgres:bo_duong_2024@4.193.151.40:5433/mydb" <<EOF
+psql "postgresql://account:pwd@ip:host/mydb" <<EOF
 INSERT INTO public.qc_auto_report_n_log (project, auto_type, env, log_file_link, report_file_link, created_at) 
 VALUES ('sbh','auto_api','${environment}','https://${endpoint_s3}/sbh-qc/auto-test-api-output/${currentDate}/${filename}_${timestamp}.log', '', '${currentUTC}');
 EOF
